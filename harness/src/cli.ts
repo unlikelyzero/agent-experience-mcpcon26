@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { headlamp } from '../../apps/headlamp/app.js';
 import { whatIff } from '../../apps/what-iff/app.js';
-import { diff, exportPatches, levelDir, parseLevel, prepare } from './prepare.js';
+import { diff, exportPatches, levelDir, parseLevel, prepare, workDir } from './prepare.js';
 import type { AppAdapter } from './types.js';
 
 const APPS: Record<string, AppAdapter> = { [headlamp.name]: headlamp, [whatIff.name]: whatIff };
@@ -13,12 +14,14 @@ const USAGE = `usage:
   ax diff --app <app> <from> <to> [--file <name>]
   ax patches export --app <app>
   ax serve --app <app> --level <n>   build and serve one level until Ctrl-C
+  ax seed --app <app>                reset the app to its starting state (saved for grade)
+  ax grade --app <app> --task <id> [--text <final answer>]   grade the last seed by hand
   ax eval | run | report   (not implemented yet)
 apps: ${Object.keys(APPS).join(', ')}`;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
-  options: { app: { type: 'string' }, force: { type: 'boolean' }, file: { type: 'string' }, level: { type: 'string' }, help: { type: 'boolean', short: 'h' } },
+  options: { app: { type: 'string' }, force: { type: 'boolean' }, file: { type: 'string' }, level: { type: 'string' }, task: { type: 'string' }, text: { type: 'string' }, help: { type: 'boolean', short: 'h' } },
 });
 
 function fail(message: string): never {
@@ -57,6 +60,22 @@ try {
       console.log(`L${level}: ${served.url}  (Ctrl-C to stop)`);
       process.once('SIGINT', () => void served.stop().then(() => process.exit(0)));
       setInterval(() => {}, 1 << 30); // keep the process alive until Ctrl-C
+      break;
+    }
+    case 'seed': {
+      const a = app();
+      writeFileSync(join(workDir(a), 'seed.json'), JSON.stringify(await a.seed(), null, 2));
+      console.log(`seeded ${a.name}; saved ${join(workDir(a), 'seed.json')}`);
+      break;
+    }
+    case 'grade': {
+      const a = app();
+      const task = a.tasks.find(t => t.id === values.task) ?? fail(`unknown --task ${values.task}; have ${a.tasks.map(t => t.id).join(', ')}`);
+      const seedFile = join(workDir(a), 'seed.json');
+      if (!existsSync(seedFile)) fail(`no ${seedFile}; run ax seed --app ${a.name}`);
+      const grade = await task.grade(JSON.parse(readFileSync(seedFile, 'utf8')), values.text ?? '');
+      console.log(grade.pass ? `${task.id} PASS` : `${task.id} FAIL\n  ${grade.reasons.join('\n  ')}`);
+      process.exitCode = grade.pass ? 0 : 1;
       break;
     }
     case 'eval':
