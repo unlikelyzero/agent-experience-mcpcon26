@@ -5,7 +5,8 @@ import { parseArgs } from 'node:util';
 import { headlamp } from '../../apps/headlamp/app.js';
 import { whatIff } from '../../apps/what-iff/app.js';
 import { diff, exportPatches, levelDir, parseLevel, prepare, workDir } from './prepare.js';
-import type { AppAdapter } from './types.js';
+import { evalPixels } from './eval-pixels.js';
+import { LEVELS, type AppAdapter } from './types.js';
 
 const APPS: Record<string, AppAdapter> = { [headlamp.name]: headlamp, [whatIff.name]: whatIff };
 
@@ -16,12 +17,13 @@ const USAGE = `usage:
   ax serve --app <app> --level <n>   build and serve one level until Ctrl-C
   ax seed --app <app>                reset the app to its starting state (saved for grade)
   ax grade --app <app> --task <id> [--text <final answer>]   grade the last seed by hand
-  ax eval | run | report   (not implemented yet)
+  ax eval pixels --app <app> [--levels 1,2,3]   L0 vs each level, byte for byte; exits 1 on a difference
+  ax eval axe | roles, ax run | report   (not implemented yet)
 apps: ${Object.keys(APPS).join(', ')}`;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
-  options: { app: { type: 'string' }, force: { type: 'boolean' }, file: { type: 'string' }, level: { type: 'string' }, task: { type: 'string' }, text: { type: 'string' }, help: { type: 'boolean', short: 'h' } },
+  options: { app: { type: 'string' }, force: { type: 'boolean' }, file: { type: 'string' }, level: { type: 'string' }, task: { type: 'string' }, levels: { type: 'string' }, text: { type: 'string' }, help: { type: 'boolean', short: 'h' } },
 });
 
 function fail(message: string): never {
@@ -78,7 +80,15 @@ try {
       process.exitCode = grade.pass ? 0 : 1;
       break;
     }
-    case 'eval':
+    case 'eval': {
+      if (rest[0] !== 'pixels') fail(`ax eval ${rest[0] ?? ''}: not implemented yet (docs/DESIGN.md §8)`);
+      const a = app();
+      const levels = values.levels
+        ? values.levels.split(',').map(parseLevel)
+        : LEVELS.slice(1).filter(l => existsSync(levelDir(a, l)));
+      if (!(await evalPixels(a, levels))) process.exitCode = 1;
+      break;
+    }
     case 'run':
     case 'report':
       fail(`ax ${command}: not implemented yet (docs/DESIGN.md §8)`);
