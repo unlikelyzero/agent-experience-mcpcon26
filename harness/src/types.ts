@@ -45,12 +45,10 @@ export interface AppAdapter<Seed = unknown> {
   evalStates: EvalState[];
 }
 
-/** One agent run: one CSV row. Field names match the CSV columns. */
+/** One agent run: one row of results/runs/<app>/runs.csv. Field names match the CSV columns. */
 export interface RunRecord {
-  timestamp: string;
-  app: string;
+  model: string;
   tier: Tier;
-  driver: string;
   task: string;
   run: number;
   pass: boolean;
@@ -68,6 +66,6 @@ export interface RunRecord {
   turns: number;
   exit_code: number | null;
   timed_out: boolean;
+  timestamp: string;
   fail_reasons: string;
-  transcript: string;
 }
