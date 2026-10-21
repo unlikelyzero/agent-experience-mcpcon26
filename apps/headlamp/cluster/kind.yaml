@@ -1,0 +1,6 @@
+# kind create cluster --config apps/headlamp/cluster/kind.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: ax-headlamp
+nodes:
+  - role: control-plane

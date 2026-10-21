@@ -188,10 +188,10 @@ then `ax prepare --force` so higher levels are rebuilt on the new patch.
 
 ## 8. Build order
 
-1. `ax serve` for Headlamp: `npm run image:build` per level (image
-   `headlamp-ax:L<n>`), run `headlamp-server -html-static-dir
-   /headlamp/frontend` against the kind kubeconfig. Check `-port`, the image
-   name and version env vars against Headlamp's Makefile.
+1. `ax serve` for Headlamp (done): the image build from `npm run image:build`
+   tagged `headlamp-ax:L<n>`, run as container `headlamp-ax-L<n>` on kind's
+   docker network with `kind get kubeconfig --internal`, published on
+   `localhost:4466+n`. Ctrl-C removes the container.
 2. Headlamp seed and graders at L0: `kind create cluster --config
    apps/headlamp/cluster/kind.yaml`, `adapter.seed()`, do each task by hand,
    confirm each grader passes, and fails on the staging distractor.
@@ -210,5 +210,9 @@ then `ax prepare --force` so higher levels are rebuilt on the new patch.
 - **Headlamp's classes are already hashed** (emotion `css-…`) at L0, so L3's
   class suffixing matters less there than in what-iff.
 - **`prepare` needs network** to fetch the pinned commit.
+- **Headlamp's `image:build` passes `--platform=local`**, which is darwin on a
+  Mac and matches no base image. `ax serve` omits it.
+- **Headlamp shows `HEADLAMP_SOURCE_COMMIT` in the UI.** Every level's image is
+  built with the pin's SHA, not the level's commit, so the pixels match.
 - **what-iff's `make check-public-hygiene`** rejects AI attribution in commits.
   That applies only to patches meant for the what-iff repo.

@@ -3,10 +3,10 @@
  * is a worktree on branch `ax/L<n>`, which is `ax/L<n-1>` plus
  * `apps/<app>/levels/L<n>-<name>.patch`. See docs/DESIGN.md §7.
  */
-import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sh } from './exec.js';
 import { LEVELS, LEVEL_NAMES, type AppAdapter, type Level } from './types.js';
 
 /** Repo root; this file runs from dist/harness/src. */
@@ -14,9 +14,7 @@ export const ROOT = resolve(fileURLToPath(import.meta.url), '../../../..');
 
 const COMMITTER = ['-c', 'user.name=ax', '-c', 'user.email=ax@localhost'];
 
-function git(cwd: string, args: string[], inherit = false): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: inherit ? 'inherit' : ['ignore', 'pipe', 'inherit'] }) ?? '';
-}
+const git = (cwd: string, args: string[], inherit = false) => sh('git', args, { cwd, inherit });
 
 export const workDir = (app: AppAdapter) => join(ROOT, '.work', app.name);
 export const levelDir = (app: AppAdapter, level: Level) => join(workDir(app), `L${level}`);
