@@ -2,11 +2,12 @@
 import { existsSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { headlamp } from '../../apps/headlamp/app.js';
+import { openmct } from '../../apps/openmct/app.js';
 import { whatIff } from '../../apps/what-iff/app.js';
 import { diff, exportPatches, levelDir, parseLevel, prepare } from './prepare.js';
 import type { AppAdapter } from './types.js';
 
-const APPS: Record<string, AppAdapter> = { [headlamp.name]: headlamp, [whatIff.name]: whatIff };
+const APPS: Record<string, AppAdapter> = { [headlamp.name]: headlamp, [openmct.name]: openmct, [whatIff.name]: whatIff };
 
 const USAGE = `usage:
   ax prepare --app <app> [--force]
