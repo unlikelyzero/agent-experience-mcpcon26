@@ -65,8 +65,10 @@ Rules for every level patch:
 
 | Level | Where | Change | Status |
 |---|---|---|---|
-| L1 | `ActionButton` | Drop `aria-label`; pass the Tooltip `title` as an element, not a string (see Gotchas) | Not yet rebuilt |
-| L1 | Table toolbar / search, resource links, form fields in dialogs | Drop names and label associations | Not started |
+| L1 | `ActionButton` | Drop `aria-label`; pass the Tooltip `title` as an element, not a string (see Gotchas) | Done |
+| L1 | Scale dialog, `ConfirmDialog` | No dialog name or description (`PaperProps` unties MUI's title link); no names on the −/+ Fabs; replica input not labelled by its caption | Done |
+| L1 | Delete dialog's Force Delete, Namespaces filter | Wrapping `<label>` becomes a div; `InputLabel` loses `htmlFor` | Done |
+| L1 | Table toolbar, row checkboxes | Left named: material-react-table builds those names from its localization strings, which also feed the visible tooltips. No task needs them; rows are reached by their name links, whose names are visible text | Out of scope |
 | L2 | `ActionButton`, menus, tabs, table row checkboxes | `<div onClick>`; no role | Not started |
 | L2 | MUI `Dialog` | Override `role="dialog"` on the Paper via `PaperProps` | Not started |
 | L3 | Tabs, expandable rows, snackbars | Drop state attrs and live regions; suffix key classes | Not started |

@@ -32,3 +32,93 @@ index 35f64e9..b7e6291 100644
            aria-disabled="true"
            tabIndex={0}
            onClick={preventDisabledActivation}
+diff --git a/frontend/src/components/common/ConfirmDialog.tsx b/frontend/src/components/common/ConfirmDialog.tsx
+index aad4a75..71f1827 100644
+--- a/frontend/src/components/common/ConfirmDialog.tsx
++++ b/frontend/src/components/common/ConfirmDialog.tsx
+@@ -73,10 +73,11 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+         {...muiDialogProps}
+         open={open}
+         onClose={handleClose}
+-        aria-labelledby="alert-dialog-title"
+-        aria-describedby="alert-dialog-description"
+         PaperProps={{
+           ...muiDialogProps.PaperProps,
++          // AX L1: no accessible name or description; MUI would otherwise link the title itself.
++          'aria-labelledby': undefined,
++          'aria-describedby': undefined,
+           sx: [
+             { minWidth: 'clamp(280px, 25vw, 600px)' },
+             ...(Array.isArray(muiDialogProps.PaperProps?.sx)
+diff --git a/frontend/src/components/common/NamespacesAutocomplete.tsx b/frontend/src/components/common/NamespacesAutocomplete.tsx
+index c5995ec..18ea3c3 100644
+--- a/frontend/src/components/common/NamespacesAutocomplete.tsx
++++ b/frontend/src/components/common/NamespacesAutocomplete.tsx
+@@ -183,7 +183,8 @@ export function PureNamespacesAutocomplete({
+             size="small"
+             label={t('Namespaces')}
+             fullWidth
+-            InputLabelProps={{ shrink: true }}
++            // AX L1: the visible "Namespaces" label is not tied to the input.
++            InputLabelProps={{ shrink: true, htmlFor: undefined }}
+             style={{ marginTop: 0 }}
+             placeholder={[...filter.namespaces.values()].length > 0 ? '' : t('Filter')}
+           />
+diff --git a/frontend/src/components/common/Resource/DeleteButton.tsx b/frontend/src/components/common/Resource/DeleteButton.tsx
+index ae87466..05c5170 100644
+--- a/frontend/src/components/common/Resource/DeleteButton.tsx
++++ b/frontend/src/components/common/Resource/DeleteButton.tsx
+@@ -247,7 +247,9 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                 </Grid>
+                 {action !== 'evict' && (
+                   <Grid item sx={{ mt: 1 }}>
++                    {/* AX L1: a div, not a wrapping <label>, so the text no longer names the checkbox. */}
+                     <FormControlLabel
++                      as="div"
+                       control={
+                         <Checkbox
+                           size="small"
+diff --git a/frontend/src/components/common/Resource/ScaleButton.tsx b/frontend/src/components/common/Resource/ScaleButton.tsx
+index e78e2f4..f7c9b12 100644
+--- a/frontend/src/components/common/Resource/ScaleButton.tsx
++++ b/frontend/src/components/common/Resource/ScaleButton.tsx
+@@ -147,7 +147,14 @@ function ScaleDialog(props: ScaleDialogProps) {
+   const currentNumReplicas = getNumReplicas();
+ 
+   return (
+-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
++    // AX L1: MUI ties the dialog to its DialogTitle by id; PaperProps comes last, so it unties it.
++    <Dialog
++      open={open}
++      onClose={onClose}
++      fullWidth
++      maxWidth="sm"
++      PaperProps={{ 'aria-labelledby': undefined }}
++    >
+       <DialogTitle>{t('Scale Replicas')}</DialogTitle>
+       <DialogContent
+         sx={{
+@@ -174,7 +181,6 @@ function ScaleDialog(props: ScaleDialogProps) {
+                 size="small"
+                 color="secondary"
+                 onClick={() => setNumReplicas(numReplicas => Math.max(0, numReplicas - 1))}
+-                aria-label={t('translation|Decrement')}
+                 disabled={numReplicas <= 0}
+                 sx={{ boxShadow: 'none' }}
+               >
+@@ -186,7 +192,6 @@ function ScaleDialog(props: ScaleDialogProps) {
+                 value={numReplicas}
+                 sx={{ marginLeft: '6px', marginRight: '6px' }}
+                 onChange={e => setNumReplicas(Math.max(0, Number(e.target.value)))}
+-                aria-labelledby={desiredNumReplicasLabel}
+                 inputProps={{
+                   min: 0,
+                   step: 1,
+@@ -197,7 +202,6 @@ function ScaleDialog(props: ScaleDialogProps) {
+                 size="small"
+                 color="secondary"
+                 onClick={() => setNumReplicas(numReplicas => numReplicas + 1)}
+-                aria-label={t('translation|Increment')}
+                 sx={{ boxShadow: 'none' }}
+               >
+                 <Icon icon="mdi:plus" width="22px" />
