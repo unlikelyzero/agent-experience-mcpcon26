@@ -11,6 +11,7 @@ It measures that on open-source apps, one at a time:
 |---|---|---|---|
 | **Headlamp** | Kubernetes UI | React 18 + MUI 5, Go 1.26, Node 22 | `kubernetes-sigs/headlamp` @ `3bb2082a0b30bd32e90c27b06d337f401ca7a596` |
 | **what-iff** | AI assistant | Angular 22, Go 1.27 | `theimaginaryfoundation/what-iff` @ `d50ee4f3184cd2560b1a94e6500ae3ab2f17fc3c` |
+| **Open MCT** | NASA mission-control telemetry UI | Vue 3, webpack, Node >=24.14.1 | `nasa/openmct` @ `e09bfaf47856b2b7ae2ea74334800b26fd27a41e` (master, 2026-10-06) |
 
 Results feed the poster's scorecard. Until `results/published/` holds real
 runs, the poster's numbers are illustrative and marked as such.
@@ -278,3 +279,288 @@ another.
   built with the pin's SHA, not the tier's commit, so the pixels match.
 - **what-iff's `make check-public-hygiene`** rejects AI attribution in commits.
   That applies only to patches meant for the what-iff repo.
+
+## 10. Open MCT
+
+NASA's mission-control framework is a Vue 3 single-page app whose features are
+all plugins, configured by the repo's `index.html`. That file installs the
+example Sine Wave Generator, Display and Flexible Layouts, Tabs, the time
+conductor and `LocalStorage` persistence. The pin is in the table at the top;
+its `package.json` asks for Node `>=24.14.1`.
+
+### Build and serve
+
+- `build` runs `npm ci` once per worktree, then the production webpack config
+  (`npm run build:prod` without the `tsc` types step) into `dist/`.
+- `serve` starts CouchDB (see Seed and graders below), then a static server
+  inside the `ax` process on `127.0.0.1`:
+  - It serves on 8090, 8091 and 8092 for `div-soup`, `wcag` and `patterns`,
+    rather than the webpack dev server on 8080, which what-iff's stack holds.
+  - It serves the repo's `index.html` at `/`, with `LocalStorage()` rewritten
+    to CouchDB, and everything else from `dist/`. The production bundle sets
+    `__OPENMCT_ROOT_RELATIVE__` to `""`, so it loads its workers and theme CSS
+    from the site root. `/dist/openmct.js` maps to the same folder.
+  - Ctrl-C closes the server. CouchDB keeps running for the next serve or
+    seed; `docker rm -f openmct-ax-couchdb` removes it.
+
+### Open MCT catalog
+
+Each tier is a patch against the pin and scoped to the surfaces the tasks use:
+
+- the object tree
+- the browse bar, its More actions menu and its Save menu
+- the Create button and menu
+- the create and Edit Properties dialogs and their forms
+- the inspector's Properties tab
+- Flexible Layout edit mode
+- the time conductor, which is on every page
+
+**`div-soup`**
+
+| Where | Change | Status |
+|---|---|---|
+| Object tree (`MctTree`, `ObjectLabel`, `ViewControl`), browse bar (`BrowseBar`, `ViewSwitcher`), Create button, menus (`MenuComponent`, `SuperMenu`), dialogs and forms (`OverlayComponent`, `FormProperties`, `FormRow`, `NumberField`, `SelectField`), inspector (`InspectorTabs`, `ObjectName`, `DetailText`, `ElementItem`), Tabs view, Flexible Layout (`ContainerComponent`, `FrameComponent`), time conductor (`ConductorComponent`, `ConductorInputsFixed`, `ConductorInputsRealtime`, `ConductorMode`, `TimePopupFixed`) | Drop `aria-label`, `aria-labelledby`, `title` and `<label for>`. Visible text is kept, so text controls keep their names, and icon buttons, form fields, the tree and the conductor lose theirs | Done (`tiers/div-soup.patch`); `DatePicker` not yet |
+| Browse bar, form footer and conductor popup `<button>`s | `<div @click>` styled like `.c-button`; no `tabindex` | Not started |
+| `TreeItem`, `MctTree`, `ViewControl`, `ConductorMode` | Drop `role="tree"`, `treeitem`, `button` and `aria-expanded`. These are already `<div>`s | Not started |
+| Menus | Drop `role="menu"`, `menuitem`, `group` and `separator`, plus `aria-live` on the description | Not started |
+| `OverlayComponent` | Drop `role="dialog"` and `aria-modal` | Not started |
+| `InspectorTabs`, `TabsComponent` | Drop `role="tablist"`, `tab` and `tabindex`. Neither sets `aria-selected`; the current tab is shown only by the `is-current` class | Not started |
+| `NumberField`, `ToggleSwitch`, `CheckBoxField` | Native inputs and `role="switch"` become styled divs | Not started |
+| `NotificationBanner` | Drop `role="alert"` and `aria-live` | Not started |
+| `c-tree__item`, `c-create-button`, `l-browse-bar__actions`, `c-overlay`, `c-fl-frame`, `c-menu`, `is-current` | Per-build class suffix | Not started |
+
+The names-only `div-soup` patch screenshots byte-identical to shipped in six
+states with the page clock frozen:
+
+- home
+- create menu
+- create dialog
+- a new Sine Wave Generator's plot
+- More actions
+- the conductor popup
+
+With it applied, `getByLabel('Title')`, the "Main Tree" tree, "More actions"
+and the "Period" spinbutton no longer resolve. "Create" still does, because
+its visible text names it.
+
+**`wcag`: the shipped scan.** axe-core 4.14 ran with the five WCAG tags over
+nine states on a seeded database:
+
+- `evalStates` (prod folder, Battery Temp, Overview, Overview in edit mode,
+  create menu, More actions, conductor popup)
+- the create dialog
+- Edit Properties
+
+Shipped Open MCT is not compliant. Ten rules fail; two of them are visual and
+are reported only. That makes `wcag.patch` real work.
+
+| Rule | Impact | Where | Fix in `wcag` |
+|---|---|---|---|
+| `aria-prohibited-attr` | serious | Pane resize handles ("Resize Browse Pane", …), `.c-conductor-axis`, Flexible Layout frames ("Thermal Layout") | Give the handles `role="separator"`; drop or move the names on role-less divs |
+| `aria-required-children` | critical | Folder grid view (`GridView`: `role="grid"` with no rows), `.c-fl-container` and its frames holder | Folder: `role="list"`/`listitem`. Flexible Layout: drop the grid/row/gridcell roles it misuses |
+| `aria-required-parent` | critical | Grid view items, `.c-fl-container__header` (`columnheader`) | Follows from the fix above |
+| `label-content-name-mismatch` | serious | Form OK button (name "Save", text "Ok"), conductor mode/clock/time-system buttons, view switcher, Flexible Layout frames | Names that start with the visible text |
+| `listitem` | serious | Location breadcrumbs (`.c-location__item`) in the inspector and Recently Viewed | Wrap the items in a list |
+| `select-name` | critical | Plot axis label `<select>`s | `aria-label` |
+| `label` | critical | Notes textarea: the row's `<label for="form-notes">` misses `id="notes-textarea"` | Match the id |
+| `aria-required-attr` | critical | Edit Properties toggles (`ToggleSwitch`, `role="switch"` without `aria-checked`) | `aria-checked` |
+| `scrollable-region-focusable` | serious | Create menu list (`.c-super-menu__menu`) | `tabindex="0"` |
+| `target-size` | serious, visual | Small icon buttons (pane collapse, sync tree, new window, frame menus, ⋯) | Reported, not fixed |
+| `color-contrast` | serious, visual | Conductor popup labels and inputs | Reported, not fixed |
+
+`label-content-name-mismatch` is an axe "experimental" rule tagged
+`wcag21a`; it ran with the tag filter. Decide whether the gate counts it.
+
+**`patterns`: APG audit of the task widgets**
+
+| Widget | APG pattern | Shipped gaps to close |
+|---|---|---|
+| Object tree | Tree View | `aria-level`/`setsize`/`posinset`, roving `tabindex`, arrow-key and typeahead navigation, `aria-selected` on the navigated item. The name comes from an inner link |
+| Create, More actions, Save, conductor mode | Menu Button + Menu | `aria-haspopup="menu"`, `aria-expanded`, `aria-controls` on the buttons; arrow keys and Escape in the menu; Save's options are `<li>`s with no menu role |
+| Create and Edit Properties overlays | Dialog (Modal) | `aria-labelledby` to the dialog title instead of "Modal Overlay"; focus trap; Escape; focus back to the opener |
+| Inspector tabs | Tabs | `aria-selected`, `aria-controls`, a `tabpanel`, arrow keys |
+| Form toggles | Switch | `aria-checked` (also a `wcag` fix) |
+| Number fields | Spinbutton (native) | Labelled by the row label, not a duplicate `aria-label` |
+| Flexible Layout reorder | None; drag only | WCAG 2.2 SC 2.5.7 (Dragging Movements, AA) needs a single-pointer alternative, and axe can't detect its absence. A visible Move up/down control changes the pixels; a menu entry only changes the open-menu state. Open question |
+| Agent hints | — | `aria-describedby` on Create, Edit, Save, More actions and the menu items saying what each does; stable `id`s; `data-testid` on the tree items, the form fields and the frames |
+
+### Open MCT tasks (seeded CouchDB: folders `Ops Prod` and `Ops Staging`)
+
+Both folders hold the same objects under the same names:
+
+- Sine Wave Generators `Battery Temp` and `Bus Voltage`
+- a Flexible Layout `Overview`, with one container whose two frames are the
+  Display Layouts `Thermal` and `Power`, in that order
+
+`Ops Staging` is the distractor for every task, as in Headlamp. Battery
+Temp's amplitude is 2.75 in prod and 3.25 in staging, so a read from the
+wrong folder gives a different answer. Object keys are fixed:
+
+- `ops-prod`, `p-battery`, `p-bus`, `p-overview`, `p-thermal`, `p-power`
+- the `s-` equivalents for staging
+- `mine` for My Items
+
+| Task | Prompt (abridged) | Grader passes when |
+|---|---|---|
+| O1 | Create a Display Layout named `Pass 42` in `Ops Prod` | exactly one new object, a `layout` named `Pass 42`, located in and appended to `ops-prod`'s `composition` |
+| O2 | Set the period of `Battery Temp` in `Ops Prod` to 20 seconds | `p-battery.telemetry.period` is 20 (string or number); the other telemetry fields are unchanged |
+| O3 | In `Ops Prod`'s `Overview`, move `Power` above `Thermal` and save | `p-overview`'s frames, read in container order, are `p-power`, `p-thermal` |
+| O4 | Rename `Bus Voltage` in `Ops Prod` to `Bus Voltage (A)` | `p-bus.name` is `Bus Voltage (A)` |
+| O5 | Report the amplitude of `Battery Temp` in `Ops Prod` | the final answer contains `2.75` and not `3.25` |
+
+Each grader also checks every seeded object:
+
+- `name`, `type`, `location`, `composition`, `configuration`, `telemetry` and
+  `notes` must equal the seed, except the one field the task changes.
+- Timestamps are ignored, since saves move them.
+- No object may be deleted.
+- No new object may appear, except O1's.
+
+Each task has been done through the UI in Chrome against shipped Open MCT.
+Every grader passes when the task is done in `Ops Prod`, and fails with the
+right reasons when it is done in `Ops Staging`.
+
+Notes on the task choices:
+
+- **O3 is drag-only.** Frames move by HTML5 drag onto drop hints that only
+  appear once a drag starts.
+- **O5 doesn't use a live value.** "Report the latest value of a telemetry
+  point" was dropped: the generator computes values in a web worker from the
+  browser's clock, so the right answer moves every second.
+
+### Seed and graders: CouchDB, not localStorage
+
+`index.html` installs `LocalStorage`, which keeps every object as one JSON
+blob under the `mct` key of the page's origin. A grader cannot read that,
+because the agent's browser profile is isolated and gone when the run ends.
+So Open MCT runs on CouchDB, which upstream supports and tests (`@couchdb`
+specs):
+
+- **The container.** One `couchdb:3.3.2` container, `openmct-ax-couchdb`, on
+  `127.0.0.1:5984`. It uses upstream's compose defaults: admin `admin`, password
+  `password`, a throwaway local database.
+- **The rewrite.** `serve` replaces `openmct.plugins.LocalStorage()` with
+  `CouchDB({ url: 'http://localhost:5984/openmct', useDesignDocuments: true })`
+  in the `index.html` response, as upstream's
+  `replace-localstorage-with-couchdb-indexhtml.sh` does. The rewrite is
+  identical at every tier, so it is in no patch.
+- **`seed()`.** It deletes the `openmct` database and runs upstream's
+  `setup-couchdb.sh`, read from the pin with `git show`. That script recreates
+  the database, makes `_security` public and adds the design documents.
+  `seed()` then bulk-loads the fixture as `{ _id, metadata, model }`
+  documents, upstream's `CouchDocument` shape.
+- **Graders.** They read `_all_docs?include_docs=true` and compare each
+  document's `.model` with the seed.
+
+### Roles suite: Open MCT's own Playwright e2e
+
+`e2e/` is a large suite that already leans on accessible names, so it can run
+unmodified as the roles signal. Across 92 `*.e2e.spec.js` files it uses:
+
+| Locator | Count |
+|---|---|
+| `getByRole` | about 976 |
+| `getByLabel` | about 1366 |
+| `getByText` | 172 |
+| `getByTitle` | 48 |
+| `getByTestId` | none |
+| `page.locator` CSS selectors | about 620 |
+
+About 75% of the semantic locators depend on a name. The most used are:
+
+- listitem "Save and Finish Editing"
+- button "Save"
+- treeitem
+- tab "Config"
+- button "Create"
+- button "Ok"
+- searchbox "Search Input"
+- button "Edit Object"
+- menuitem "Edit Properties…"
+- button "Time Conductor Mode"
+
+State assertions are rare: `aria-selected` 4, `expanded: true` 2,
+`toBeChecked` 8.
+
+**Expected shape across tiers:**
+
+- **`div-soup` collapses it.** `createDomainObjectWithDefaults` in
+  `e2e/appActions.js`, which nearly every spec calls, fills the form with
+  `getByLabel('Title')`. That name comes from `<label for>`. The time
+  conductor helpers, `expandEntireTree` and
+  `renameCurrentObjectFromBrowseBar` also rely on names. The names-only patch
+  alone already breaks all of them.
+- **`wcag` should match shipped.** It adds semantics without renaming
+  anything the suite queries. Two exceptions:
+  - The form's OK button is named "Save" today, and specs click
+    `getByRole('button', { name: 'Save' })`. A `label-content-name-mismatch`
+    fix that renames it to "Ok…" would break them, so the `wcag` fix must keep
+    "Save" in the name ("Ok, save").
+  - The same holds for any renamed conductor button.
+- **`patterns`** adds `data-testid`, which the suite doesn't use, so it should
+  also match shipped.
+
+Shortlist for the roles suite. These are functional specs, with no
+`@couchdb`, `@snapshot`, `@generatedata`, mobile or perf:
+
+| Spec (`e2e/tests/functional/…`) | Tests | Leans on |
+|---|---|---|
+| `tree.e2e.spec.js` | 8 | tree, treeitem, "Expand" labels |
+| `forms.e2e.spec.js` | 11 | textbox, checkbox, field labels |
+| `ui/inspector.e2e.spec.js` | 2 | tabs "Properties"/"Styles", button "Inspect" |
+| `moveAndLinkObjects.e2e.spec.js` | 3 | treeitem, menuitem, CSS |
+| `recentObjects.e2e.spec.js` | 7 | getByRole incl. `expanded: true` |
+| `renaming.e2e.spec.js` | 1 | browse bar labels |
+| `smoke.e2e.spec.js` | 2 | almost no names; a sanity check |
+| `plugins/timeConductor/timeConductor.e2e.spec.js` | 8 | conductor labels |
+| `plugins/displayLayout/displayLayout.e2e.spec.js` | 17 | tab "Elements", labels |
+| `plugins/flexibleLayout/flexibleLayout.e2e.spec.js` | 8 | dialog, CSS |
+| `plugins/tabs/tabs.e2e.spec.js` | 3 | labels, checkbox |
+| `search.e2e.spec.js` | 9 | searchbox, dialog, status |
+
+Running it against a tier, unchanged:
+
+- **baseURL.** Every config hardcodes `baseURL: 'http://localhost:8080/'` and
+  a `webServer` of `npm run start:coverage`, and nothing reads an env var. Use
+  a wrapper config outside the app's tree: it imports
+  `e2e/playwright-ci.config.js`, overrides `use.baseURL` to the tier's port
+  and drops `webServer`. The specs and fixtures stay untouched.
+- **Persistence.** The shortlist assumes `LocalStorage` persistence, so the
+  roles run needs `serve` without the CouchDB rewrite. That is a flag still to
+  add.
+- **`/test-data`.** The dev server also mounts `e2e/test-data` at
+  `/test-data`. Only framework, mobile, perf and visual specs use it, so it is
+  left out.
+- **Fixtures.** `baseFixtures.js` collects coverage only when
+  `window.__coverage__` exists, so the uninstrumented production build is
+  fine. It fails tests on any console error (`failOnConsoleError`), so a tier
+  must load without 404s.
+- **axe.** `tests/visual-a11y` has 12 `@a11y` specs that call axe (`wcag2aa`)
+  through `scanForA11yViolations` in `e2e/avpFixtures.js`. They are a
+  ready-made source for `ax eval axe`.
+
+### Open MCT gotchas
+
+- **Names from content survive name stripping.** Tree items, menu items, the
+  Create button and text buttons are named by their visible text, so
+  `div-soup`'s names step only hurts controls named by
+  `aria-label`/`title`/`label for`. Their roles go in the roles step.
+- **`title` drives a cursor.** `inspector.scss` and `_legacy.scss` set
+  `cursor: help` on `[title]` cells. Screenshots don't capture the cursor, so
+  removing `title` keeps the pixel gate.
+- **`evalStates` setup selectors use classes that `div-soup` suffixes**
+  (`.c-create-button`, `.l-browse-bar__actions`). The pixel gate has to
+  resolve them before the suffix applies, or match on a prefix.
+- **The production bundle loads assets from the site root**, not `dist/`; see
+  Build and serve.
+- **The built-in browser pane has no `SharedWorker`.** Open MCT's CouchDB
+  changes feed runs in one, so the pane shows "Attempting to connect to
+  CouchDB…" forever. Reads and writes still work. Chrome shows "CouchDB is
+  connected".
+- **Upstream's `AGENTS.md` asks for an `Assisted-by:` trailer.** That is for
+  contributions to `nasa/openmct`; tier commits in `.work/` are local and
+  don't carry it.
+- **Freeze time for screenshots.** The header clock, conductor bounds and
+  plots move every second. `page.clock.setFixedTime` freezes the page but not
+  the generator's worker. Plots of an unseeded generator matched anyway in
+  the shipped vs. names-only check; don't rely on that for `ax eval pixels`.
