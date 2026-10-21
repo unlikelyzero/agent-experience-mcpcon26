@@ -1,0 +1,299 @@
+diff --git a/frontend/src/components/common/ActionButton/ActionButton.tsx b/frontend/src/components/common/ActionButton/ActionButton.tsx
+index 35f64e9..9361f71 100644
+--- a/frontend/src/components/common/ActionButton/ActionButton.tsx
++++ b/frontend/src/components/common/ActionButton/ActionButton.tsx
+@@ -46,6 +46,10 @@ export interface ActionButtonProps {
+   buttonStyle?: ButtonStyle;
+   iconButtonProps?: IconButtonProps;
+   iconProps?: IconProps;
++  /** AX patterns: what the action does, for agents and screen readers (aria-describedby). */
++  hint?: string;
++  /** AX patterns: a stable data-testid for the control. */
++  testId?: string;
+ }
+ 
+ /**
+@@ -64,7 +68,17 @@ export default function ActionButton({
+   iconButtonProps,
+   iconProps,
+   buttonStyle = 'action',
++  hint,
++  testId,
+ }: ActionButtonProps) {
++  // AX patterns: the hint lives in a hidden element, so it is read but never drawn.
++  const hintId = React.useId();
++  const hintProps = hint ? { 'aria-describedby': hintId } : {};
++  const hintElement = hint ? (
++    <span hidden id={hintId}>
++      {hint}
++    </span>
++  ) : null;
+   const preventDisabledActivation = (event: React.SyntheticEvent<HTMLElement>) => {
+     event.preventDefault();
+     event.stopPropagation();
+@@ -75,6 +89,8 @@ export default function ActionButton({
+   if (buttonStyle === 'menu') {
+     return (
+       <MenuItem
++        {...hintProps}
++        data-testid={testId}
+         disabled={isDisabled}
+         onClick={isDisabled ? preventDisabledActivation : onClick}
+         onKeyDown={
+@@ -91,6 +107,7 @@ export default function ActionButton({
+           <Icon icon={icon} color={color} width={width} {...iconProps} />
+         </ListItemIcon>
+         <ListItemText>{longDescription || description}</ListItemText>
++        {hintElement}
+       </MenuItem>
+     );
+   }
+@@ -101,6 +118,8 @@ export default function ActionButton({
+       onClick={onClick}
+       edge={edge}
+       size="medium"
++      {...hintProps}
++      data-testid={testId}
+       {...iconButtonProps}
+     >
+       <Icon icon={icon} color={color} width={width} {...iconProps} />
+@@ -108,26 +127,30 @@ export default function ActionButton({
+   );
+ 
+   return (
+-    <Tooltip title={longDescription || description}>
+-      {isDisabled ? (
+-        <span
+-          role="button"
+-          aria-label={buttonLabel}
+-          aria-disabled="true"
+-          tabIndex={0}
+-          onClick={preventDisabledActivation}
+-          onKeyDown={event => {
+-            if (event.key === 'Enter' || event.key === ' ') {
+-              preventDisabledActivation(event);
+-            }
+-          }}
+-          style={{ display: 'inline-flex' }}
+-        >
+-          {React.cloneElement(button, { 'aria-hidden': true, tabIndex: -1 })}
+-        </span>
+-      ) : (
+-        button
+-      )}
+-    </Tooltip>
++    <>
++      <Tooltip title={longDescription || description}>
++        {isDisabled ? (
++          <span
++            role="button"
++            aria-label={buttonLabel}
++            {...hintProps}
++            aria-disabled="true"
++            tabIndex={0}
++            onClick={preventDisabledActivation}
++            onKeyDown={event => {
++              if (event.key === 'Enter' || event.key === ' ') {
++                preventDisabledActivation(event);
++              }
++            }}
++            style={{ display: 'inline-flex' }}
++          >
++            {React.cloneElement(button, { 'aria-hidden': true, tabIndex: -1 })}
++          </span>
++        ) : (
++          button
++        )}
++      </Tooltip>
++      {hintElement}
++    </>
+   );
+ }
+diff --git a/frontend/src/components/common/ConfirmDialog.tsx b/frontend/src/components/common/ConfirmDialog.tsx
+index aad4a75..f761d42 100644
+--- a/frontend/src/components/common/ConfirmDialog.tsx
++++ b/frontend/src/components/common/ConfirmDialog.tsx
+@@ -77,6 +77,10 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+         aria-describedby="alert-dialog-description"
+         PaperProps={{
+           ...muiDialogProps.PaperProps,
++          // AX patterns: APG alert dialog, since it confirms an action, and modal.
++          role: 'alertdialog',
++          'aria-modal': true,
++          'data-testid': 'confirm-dialog',
+           sx: [
+             { minWidth: 'clamp(280px, 25vw, 600px)' },
+             ...(Array.isArray(muiDialogProps.PaperProps?.sx)
+diff --git a/frontend/src/components/common/Resource/DeleteButton.tsx b/frontend/src/components/common/Resource/DeleteButton.tsx
+index ae87466..7efeba0 100644
+--- a/frontend/src/components/common/Resource/DeleteButton.tsx
++++ b/frontend/src/components/common/Resource/DeleteButton.tsx
+@@ -143,6 +143,11 @@ export default function DeleteButton(props: DeleteButtonProps) {
+   const label = (a: DeleteAction) =>
+     a === 'evict' ? t('translation|Evict') : t('translation|Delete');
+   const icon = (a: DeleteAction) => (a === 'evict' ? 'mdi:logout' : 'mdi:delete');
++  // AX patterns: say what each removal does; Evict and Delete look alike but differ.
++  const hint = (a: DeleteAction) =>
++    a === 'evict'
++      ? t('Asks for confirmation, then evicts this pod through the eviction API, respecting disruption budgets. To delete it instead, use More delete options.')
++      : t('Asks for confirmation, then deletes this resource.');
+ 
+   // Only offer actions the user is actually authorized for. Evict never applies to
+   // non-pod resources.
+@@ -185,6 +190,8 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                   buttonStyle="menu"
+                   onClick={() => openDialogFor(a)}
+                   icon={icon(a)}
++                  hint={hint(a)}
++                  testId={`${a}-menu-item`}
+                 />
+               ))}
+             </>
+@@ -197,6 +204,8 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                 buttonStyle={buttonStyle}
+                 onClick={() => openDialogFor(defaultAction)}
+                 icon="mdi:delete"
++                hint={hint(defaultAction)}
++                testId={`${defaultAction}-button`}
+               />
+               <ActionButton
+                 description={t('translation|More delete options')}
+@@ -205,6 +214,8 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                   setMenuAnchorEl(event.currentTarget)
+                 }
+                 icon="mdi:menu-down"
++                hint={t('Opens a menu with the other way to remove this pod.')}
++                testId="more-delete-options"
+                 iconButtonProps={{
+                   'aria-haspopup': 'true',
+                   'aria-expanded': Boolean(menuAnchorEl),
+@@ -217,7 +228,14 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                 open={Boolean(menuAnchorEl)}
+                 onClose={() => setMenuAnchorEl(null)}
+               >
+-                <MenuItem onClick={() => openDialogFor(alternateAction)}>
++                <MenuItem
++                  onClick={() => openDialogFor(alternateAction)}
++                  aria-describedby={`${menuId}-hint`}
++                  data-testid={`${alternateAction}-menu-item`}
++                >
++                  <span hidden id={`${menuId}-hint`}>
++                    {hint(alternateAction)}
++                  </span>
+                   {label(alternateAction)}
+                 </MenuItem>
+               </Menu>
+@@ -228,6 +246,8 @@ export default function DeleteButton(props: DeleteButtonProps) {
+               buttonStyle={buttonStyle}
+               onClick={() => openDialogFor(availableActions[0])}
+               icon={icon(availableActions[0])}
++              hint={hint(availableActions[0])}
++              testId={`${availableActions[0]}-button`}
+             />
+           )}
+ 
+diff --git a/frontend/src/components/common/Resource/ScaleButton.tsx b/frontend/src/components/common/Resource/ScaleButton.tsx
+index e78e2f4..8dfb597 100644
+--- a/frontend/src/components/common/Resource/ScaleButton.tsx
++++ b/frontend/src/components/common/Resource/ScaleButton.tsx
+@@ -103,6 +103,8 @@ export default function ScaleButton(props: ScaleButtonProps) {
+           setOpenDialog(true);
+         }}
+         icon="mdi:expand-all"
++        hint={t('Opens a dialog to set how many replicas this workload runs.')}
++        testId="scale-button"
+       />
+       <ScaleDialog resource={item} open={openDialog} onClose={handleClose} onSave={handleSave} />
+     </AuthVisible>
+@@ -147,8 +149,18 @@ function ScaleDialog(props: ScaleDialogProps) {
+   const currentNumReplicas = getNumReplicas();
+ 
+   return (
+-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+-      <DialogTitle>{t('Scale Replicas')}</DialogTitle>
++    // AX patterns: APG modal dialog (aria-modal, labelled by its title, described by the
++    // current count) plus a stable id and test ids.
++    <Dialog
++      open={open}
++      onClose={onClose}
++      fullWidth
++      maxWidth="sm"
++      aria-labelledby="scale-dialog-title"
++      aria-describedby="scale-dialog-current"
++      PaperProps={{ id: 'scale-dialog', 'aria-modal': true, 'data-testid': 'scale-dialog' } as any}
++    >
++      <DialogTitle id="scale-dialog-title">{t('Scale Replicas')}</DialogTitle>
+       <DialogContent
+         sx={{
+           paddingBottom: '30px', // Prevent the content from overflowing
+@@ -156,7 +168,7 @@ function ScaleDialog(props: ScaleDialogProps) {
+       >
+         <Grid container spacing={2}>
+           <Grid item xs={12}>
+-            <DialogContentText>
++            <DialogContentText id="scale-dialog-current">
+               {t('translation|Current number of replicas: {{ numReplicas }}', {
+                 numReplicas:
+                   currentNumReplicas === -1 ? t('translation|Unknown') : currentNumReplicas,
+@@ -175,6 +187,7 @@ function ScaleDialog(props: ScaleDialogProps) {
+                 color="secondary"
+                 onClick={() => setNumReplicas(numReplicas => Math.max(0, numReplicas - 1))}
+                 aria-label={t('translation|Decrement')}
++                data-testid="scale-decrement"
+                 disabled={numReplicas <= 0}
+                 sx={{ boxShadow: 'none' }}
+               >
+@@ -186,10 +199,14 @@ function ScaleDialog(props: ScaleDialogProps) {
+                 value={numReplicas}
+                 sx={{ marginLeft: '6px', marginRight: '6px' }}
+                 onChange={e => setNumReplicas(Math.max(0, Number(e.target.value)))}
+-                aria-labelledby={desiredNumReplicasLabel}
+                 inputProps={{
+                   min: 0,
+                   step: 1,
++                  // AX wcag: on the <input> itself; on Input it lands on the wrapper div and the
++                  // field has no label (axe `label`, WCAG 4.1.2).
++                  'aria-labelledby': desiredNumReplicasLabel,
++                  id: 'scale-replicas-input',
++                  'data-testid': 'scale-replicas-input',
+                 }}
+               />
+ 
+@@ -198,6 +215,7 @@ function ScaleDialog(props: ScaleDialogProps) {
+                 color="secondary"
+                 onClick={() => setNumReplicas(numReplicas => numReplicas + 1)}
+                 aria-label={t('translation|Increment')}
++                data-testid="scale-increment"
+                 sx={{ boxShadow: 'none' }}
+               >
+                 <Icon icon="mdi:plus" width="22px" />
+@@ -218,10 +236,11 @@ function ScaleDialog(props: ScaleDialogProps) {
+         </Grid>
+       </DialogContent>
+       <DialogActions>
+-        <Button onClick={onClose} color="secondary" variant="contained">
++        <Button onClick={onClose} color="secondary" variant="contained" data-testid="scale-cancel">
+           {t('translation|Cancel')}
+         </Button>
+         <Button
++          data-testid="scale-apply"
+           onClick={() => {
+             onSave(numReplicas);
+             dispatchHeadlampEvent({
+diff --git a/frontend/src/components/cronjob/Details.tsx b/frontend/src/components/cronjob/Details.tsx
+index 8e37254..af3b3da 100644
+--- a/frontend/src/components/cronjob/Details.tsx
++++ b/frontend/src/components/cronjob/Details.tsx
+@@ -242,6 +242,12 @@ export default function CronJobDetails(props: {
+             onClick={() => applySuspend(cronJob, !isCronSuspended)}
+             icon={isCronSuspended ? 'mdi:play-circle' : 'mdi:pause-circle'}
+             iconButtonProps={{ disabled: isPendingSuspend }}
++            hint={
++              isCronSuspended
++                ? t('Lets this CronJob start Jobs on its schedule again.')
++                : t('Stops this CronJob from starting new Jobs until it is resumed. Running Jobs continue.')
++            }
++            testId={isCronSuspended ? 'resume-button' : 'suspend-button'}
+           />
+         </AuthVisible>,
+       ]

@@ -82,7 +82,10 @@ Rules for every tier patch:
 | div-soup | Table toolbar, row checkboxes, tabs, Force Delete checkbox | Left as shipped. No task path needs them, and material-react-table builds its toolbar names from the strings that feed the visible tooltips | Out of scope |
 | div-soup | Class-name suffix | Not done: Headlamp's own classes are emotion hashes already, and suffixing MUI's would break Headlamp's `.Mui*` style overrides and so the pixels | Out of scope |
 | wcag | Scale dialog replica input | The shipped scan of the 8 `evalStates` finds one WCAG violation, `label`: MUI's `Input` puts `aria-labelledby` on its wrapper div, so the `<input>` has no label. Moved onto `inputProps`. No visual or best-practice findings | Done: WCAG-clean |
-| patterns | Task surfaces | APG audit per widget, plus agent hints | Not started |
+| patterns | Scale dialog | The wcag fix; APG modal dialog (`aria-modal`, labelled by its title, described by the current count); stable ids and `data-testid`s on the dialog, input, −/+ and Cancel/Apply | Done |
+| patterns | `ConfirmDialog` | APG alert dialog: `role="alertdialog"`, `aria-modal`; `data-testid` | Done |
+| patterns | `ActionButton`, delete split button, CronJob Suspend/Resume | `hint` (`aria-describedby` to a `hidden` element, never drawn) and `testId` props. Hints say what each action does; Evict's says how it differs from Delete, the H2 trap | Done |
+| patterns | Delete split button menu, landmarks, tables | Already follow their patterns as shipped (menu button with `aria-haspopup`/`aria-expanded`/`aria-controls`, named `nav` and `main`, native tables) | No change |
 
 ### what-iff catalog
 
@@ -242,8 +245,8 @@ another.
    tier is done. It runs every rule axe enables by default and sorts the
    results; a rule counts as WCAG when it carries one of the five tags.
 5. Headlamp tier patches, each passing the pixel gate: `div-soup` (done for
-   the task paths), `wcag` (done, axe-clean), `patterns` (APG audit plus
-   hints).
+   the task paths), `wcag` (done, axe-clean), `patterns` (done for the task
+   paths: APG dialog patterns plus hints). All three pixel-identical.
 6. `ax eval roles`, then `ax run` and `ax report`.
 7. what-iff: port seed and graders, recut runtime level 3 as `div-soup`, write
    `wcag` and `patterns`.
