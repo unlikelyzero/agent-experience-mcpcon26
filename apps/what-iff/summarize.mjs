@@ -34,7 +34,7 @@ for (const model of MODELS)
     const falseDone = rs.filter(r => r.claimed_done === 'true' && r.pass === 'false').length;
     console.log(
       `| ${model} | ${tier} | ${pass}/${rs.length} | ${mean(rs.map(r => +r.tool_calls)).toFixed(1)} | ${mean(rs.map(r => +r.screenshots)).toFixed(1)} | ` +
-        `${pass ? fmtTokens(rs.reduce((s, r) => s + tokens(r), 0) / pass) : '—'} | ${pass ? '$' + (spent / pass).toFixed(2) : '—'} | ${falseDone} |`,
+        `${pass ? fmtTokens(rs.reduce((s, r) => s + tokens(r), 0) / pass) : '—'} | ${pass ? '$' + (spent / pass).toFixed(spent / pass < 0.1 ? 3 : 2) : '—'} | ${falseDone} |`,
     );
   }
 const t4 = runs.filter(r => r.task === 'T4');

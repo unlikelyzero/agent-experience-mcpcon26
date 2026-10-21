@@ -23,6 +23,9 @@ graded from app state through the API, not from the agent's claim. Costs are lis
 | claude-haiku-4-5 | div-soup | 9/12 | 37.3 | 1.6 | 2.14M | $0.41 | 2 |
 | claude-haiku-4-5 | wcag | 11/12 | 26.7 | 0.0 | 1.10M | $0.25 | 0 |
 | claude-haiku-4-5 | patterns | 12/12 | 24.4 | 0.2 | 922k | $0.22 | 0 |
+| claude-haiku-5-5 | div-soup | 11/12 | 24.3 | 0.1 | 626k | $0.015 | 0 |
+| claude-haiku-5-5 | wcag | 12/12 | 20.3 | 0.0 | 511k | $0.013 | 0 |
+| claude-haiku-5-5 | patterns | 12/12 | 23.8 | 0.4 | 626k | $0.015 | 0 |
 
 Regenerate with `node apps/what-iff/summarize.mjs`. Every run is a row in [`runs.csv`](runs.csv).
 
@@ -34,8 +37,12 @@ Regenerate with `node apps/what-iff/summarize.mjs`. Every run is a row in [`runs
 | what-iff's own role/label-based memory specs, unmodified | 5/26 | 26/26 | 26/26 |
 | Screenshots identical to WCAG, byte for byte | yes | — | yes |
 
-Both compliant tiers read zero on axe. Every model still spent fewer tokens per success on patterns
-than on WCAG: 8% fewer for Opus, 5% for Sonnet and 16% for Haiku 4.5.
+Div soup costs every model more tokens per success than WCAG: 16% more for Opus, 22% for Sonnet
+and Haiku 5.5, and 95% for Haiku 4.5. Both compliant tiers read zero on axe, so axe can't tell them
+apart; the agents mostly can. Patterns cost 5–16% fewer tokens than WCAG for Opus, Sonnet and
+Haiku 4.5, but not for Haiku 5.5, where patterns came out level with div soup and above WCAG. One
+Haiku 5.5 patterns run (T3, 47 tool calls, 1.58M tokens) is an outlier; without it patterns is
+still about 5% above WCAG, so the hints don't help Haiku 5.5 on these tasks.
 
 ## Limits
 
@@ -47,5 +54,8 @@ than on WCAG: 8% fewer for Opus, 5% for Sonnet and 16% for Haiku 4.5.
   zero doesn't cover it.
 - One what-iff spec ("deep-links directly to the Archived status tab") is flaky at both WCAG and
   patterns.
-- Haiku 5.5 runs are in progress. The `claude` CLI version used (2.1.292) doesn't know its prices
-  and bills it at Opus 5.5 rates, so its costs are repriced from per-request token counts.
+- Haiku 5.5 costs are repriced. The `claude` CLI version used (2.1.292) doesn't know Haiku 5.5's
+  prices and reports Opus 5.5 rates, so `cost_usd` for those rows is recomputed from each request's
+  token counts at $0.10/$0.50 per MTok (prompts ≤ 100K tokens) or $0.50/$2.50 (longer), with
+  cache reads at 0.1× and 1-hour cache writes at 2× the input rate. The same method reproduces the
+  CLI's figures for Sonnet 5.5 and Haiku 4.5 to the cent.

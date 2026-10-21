@@ -25,14 +25,16 @@ Playwright MCP, graded from app state.
 | Claude Opus 5.5 | 348k | 301k | 278k |
 | Claude Sonnet 5.5 | 402k | 329k | 312k |
 | Claude Haiku 4.5 | 2.14M | 1.10M | 922k |
-| Success rate, all three models | 89% | 97% | 100% |
+| Claude Haiku 5.5 | 626k | 511k | 626k |
+| Success rate, all four models | 90% | 98% | 100% |
 | axe WCAG violations | 22 | 0 | 0 |
 
-Better markup costs every model fewer tokens. The gap is 20–22% for Opus and
-Sonnet, and 57% for Haiku 4.5, which also takes screenshots and falsely claims
-success on div soup. axe can't tell WCAG from patterns, but every model spent
-fewer tokens on patterns. Full tables, per-run data and limits are in
-[`results/published/what-iff`](results/published/what-iff/README.md).
+Div soup costs every model more tokens per success than WCAG: 16% more for
+Opus, 22% for Sonnet and Haiku 5.5, and 95% for Haiku 4.5, which also takes
+screenshots and falsely claims success there. axe reads zero for both WCAG and
+patterns. Patterns went further for Opus, Sonnet and Haiku 4.5 (5–16% fewer
+tokens than WCAG) but not for Haiku 5.5. Full tables, per-run data and limits
+are in [`results/published/what-iff`](results/published/what-iff/README.md).
 
 ## Apps
 
