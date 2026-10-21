@@ -2,3 +2,5 @@ node_modules/
 dist/
 .work/
 results/runs/
+poster/dist/
+poster/build/
