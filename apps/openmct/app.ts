@@ -3,10 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { sh, waitForHttp } from '../../harness/src/exec.js';
-import type { AppAdapter, Level } from '../../harness/src/types.js';
+import { TIERS, type AppAdapter, type Tier } from '../../harness/src/types.js';
 
 /** Off 8080 (Open MCT's dev-server default), which the what-iff stack uses. */
-const port = (level: Level) => 8090 + level;
+const port = (tier: Tier) => 8090 + TIERS.indexOf(tier);
 
 const TYPES: Record<string, string> = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
@@ -23,14 +23,14 @@ export const openmct: AppAdapter = {
   sha: 'e09bfaf47856b2b7ae2ea74334800b26fd27a41e',
 
   // The production bundle (`npm run build:prod` without the tsc types step) into dist/.
-  async build(_level, dir) {
+  async build(_tier, dir) {
     if (!existsSync(join(dir, 'node_modules'))) sh('npm', ['ci', '--no-audit', '--no-fund'], { cwd: dir, inherit: true });
     sh('npx', ['webpack', '--config', './.webpack/webpack.prod.mjs'], { cwd: dir, inherit: true });
   },
 
   // The repo's index.html (it loads dist/openmct.js and installs the example plugins) at `/`.
   // The prod bundle asks for its workers and themes at the site root, so everything else is dist/.
-  async serve(level, dir) {
+  async serve(tier, dir) {
     const dist = join(dir, 'dist');
     const server = createServer(async (req, res) => {
       const path = normalize(decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname));
@@ -43,8 +43,8 @@ export const openmct: AppAdapter = {
         res.writeHead(404).end();
       }
     });
-    await new Promise<void>(resolve => server.listen(port(level), '127.0.0.1', resolve));
-    const url = `http://localhost:${port(level)}`;
+    await new Promise<void>(resolve => server.listen(port(tier), '127.0.0.1', resolve));
+    const url = `http://localhost:${port(tier)}`;
     await waitForHttp(url);
     return { url, stop: () => new Promise<void>(resolve => { server.close(() => resolve()); server.closeAllConnections(); }) };
   },
