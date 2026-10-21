@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { headlamp } from '../../apps/headlamp/app.js';
 import { whatIff } from '../../apps/what-iff/app.js';
+import { evalAxe } from './eval-axe.js';
 import { evalPixels } from './eval-pixels.js';
 import { diff, exportPatches, parseTier, prepare, tierDir, workDir } from './prepare.js';
 import { TIERS, type AppAdapter } from './types.js';
@@ -18,7 +19,8 @@ const USAGE = `usage:
   ax seed --app <app>                reset the app to its starting state (saved for grade)
   ax grade --app <app> --task <id> [--text <final answer>]   grade the last seed by hand
   ax eval pixels --app <app> [--tiers a,b,…]   every tier vs the first, byte for byte; exits 1 on a difference
-  ax eval axe | roles, ax run | report   (not implemented yet)
+  ax eval axe --app <app> [--tiers a,b,…]      axe per tier; exits 1 unless wcag and patterns are WCAG-clean
+  ax eval roles, ax run | report   (not implemented yet)
 apps: ${Object.keys(APPS).join(', ')}
 tiers: ${TIERS.join(', ')}`;
 
@@ -82,10 +84,11 @@ try {
       break;
     }
     case 'eval': {
-      if (rest[0] !== 'pixels') fail(`ax eval ${rest[0] ?? ''}: not implemented yet (docs/DESIGN.md §8)`);
+      const evals = { pixels: evalPixels, axe: evalAxe };
+      const run = evals[rest[0] as keyof typeof evals] ?? fail(`ax eval ${rest[0] ?? ''}: not implemented yet (docs/DESIGN.md §8)`);
       const a = app();
       const tiers = values.tiers ? values.tiers.split(',').map(parseTier) : TIERS.filter(t => existsSync(tierDir(a, t)));
-      if (!(await evalPixels(a, tiers))) process.exitCode = 1;
+      if (!(await run(a, tiers))) process.exitCode = 1;
       break;
     }
     case 'run':

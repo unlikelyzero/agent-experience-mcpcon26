@@ -81,7 +81,7 @@ Rules for every tier patch:
 | div-soup | Snackbars, copy-button and table status regions, details sections, delete split button | No `role="alert"` (notistack hardcodes it; a ref strips it), no `role="status"`/`aria-live`/`aria-busy`, no `aria-haspopup`/`aria-expanded`/`aria-controls` | Done |
 | div-soup | Table toolbar, row checkboxes, tabs, Force Delete checkbox | Left as shipped. No task path needs them, and material-react-table builds its toolbar names from the strings that feed the visible tooltips | Out of scope |
 | div-soup | Class-name suffix | Not done: Headlamp's own classes are emotion hashes already, and suffixing MUI's would break Headlamp's `.Mui*` style overrides and so the pixels | Out of scope |
-| wcag | Task surfaces | Fix what the axe WCAG scan of shipped finds | Needs the shipped scan |
+| wcag | Scale dialog replica input | The shipped scan of the 8 `evalStates` finds one WCAG violation, `label`: MUI's `Input` puts `aria-labelledby` on its wrapper div, so the `<input>` has no label. Moved onto `inputProps`. No visual or best-practice findings | Done: WCAG-clean |
 | patterns | Task surfaces | APG audit per widget, plus agent hints | Not started |
 
 ### what-iff catalog
@@ -214,7 +214,8 @@ whether compliance is enough for agents.
 | `ax seed --app <a>` | Reset to the starting state; saves the seed to `.work/<a>/seed.json` |
 | `ax grade --app <a> --task <id> [--text <answer>]` | Grade the cluster against the last seed, for checking a task by hand |
 | `ax eval pixels --app <a> [--tiers a,b,…]` | Pixel gate: each `evalStates` entry in every tier vs the first, byte for byte (default: every prepared tier; an unpatched tier is the app as shipped); exits 1 on any difference and writes the pairs to `results/runs/pixels-<time>/` |
-| `ax eval axe\|roles --app <a>` | axe and roles reports |
+| `ax eval axe --app <a> [--tiers a,b,…]` | axe-core on every `evalStates` entry per tier, split into WCAG-tagged, visual and best-practice; exits 1 unless `wcag` and `patterns` have no WCAG violations. Findings go to `results/runs/axe-<time>/axe.json` |
+| `ax eval roles --app <a>` | Roles report |
 | `ax run --app <a> [--tiers] [--drivers] [--tasks] [--runs] [--max-budget-usd]` | The agent matrix. Interleaves tiers so drift spreads evenly |
 | `ax report --app <a>` | Per-tier tables as Markdown and JSON |
 
@@ -237,10 +238,12 @@ another.
    frames 500 ms apart are identical; a differing pair is reshot once, since
    live data (a restart count) can tick between shots. Not in CI yet: it needs
    the kind cluster and Docker builds.
-4. `ax eval axe` with WCAG tag filtering. It defines when the `wcag` tier is
-   done.
+4. `ax eval axe` with WCAG tag filtering (done). It defines when the `wcag`
+   tier is done. It runs every rule axe enables by default and sorts the
+   results; a rule counts as WCAG when it carries one of the five tags.
 5. Headlamp tier patches, each passing the pixel gate: `div-soup` (done for
-   the task paths), `wcag` (axe-clean), `patterns` (APG audit plus hints).
+   the task paths), `wcag` (done, axe-clean), `patterns` (APG audit plus
+   hints).
 6. `ax eval roles`, then `ax run` and `ax report`.
 7. what-iff: port seed and graders, recut runtime level 3 as `div-soup`, write
    `wcag` and `patterns`.

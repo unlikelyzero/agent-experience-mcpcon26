@@ -5,11 +5,11 @@
  */
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { chromium, type Browser } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 import { ROOT, tierDir } from './prepare.js';
 import type { AppAdapter, EvalState, Served, Tier } from './types.js';
 
-/** The same moment at both levels, so relative times ("5m ago") render the same. */
+/** The same moment in every tier, so relative times ("5m ago") render the same. */
 const NOW = new Date();
 
 /**
@@ -19,7 +19,12 @@ const NOW = new Date();
 const DETERMINISTIC = ['--disable-gpu', '--disable-gpu-rasterization', '--disable-partial-raster',
   '--force-color-profile=srgb', '--disable-skia-runtime-opts', '--disable-lcd-text', '--font-render-hinting=none'];
 
-async function shot(browser: Browser, url: string, state: EvalState): Promise<Buffer> {
+/**
+ * Open `state` in a fresh context, wait until it settles (two identical frames in a row,
+ * which covers lazy data and transitions without per-state waits), then hand the page and
+ * its settled frame to `use`. Shared by the pixel and axe evals so both see the same state.
+ */
+export async function atState<T>(browser: Browser, url: string, state: EvalState, use: (page: Page, frame: Buffer) => Promise<T>): Promise<T> {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, locale: 'en-US', timezoneId: 'UTC', reducedMotion: 'reduce',
   });
@@ -28,12 +33,11 @@ async function shot(browser: Browser, url: string, state: EvalState): Promise<Bu
     await page.clock.setFixedTime(NOW);
     await page.goto(url + state.path, { waitUntil: 'networkidle' });
     if (state.setup) await page.click(state.setup);
-    // Settled = two identical frames in a row; covers lazy data and transitions without per-state waits.
     let last: Buffer = Buffer.alloc(0);
     for (let i = 0; i < 20; i++) {
       await page.waitForTimeout(500);
       const next = await page.screenshot({ animations: 'disabled', caret: 'hide' });
-      if (next.equals(last)) return next;
+      if (next.equals(last)) return await use(page, next);
       last = next;
     }
     throw new Error(`${state.name}: never settled at ${url}`);
@@ -42,7 +46,11 @@ async function shot(browser: Browser, url: string, state: EvalState): Promise<Bu
   }
 }
 
-async function serveTier(app: AppAdapter, tier: Tier): Promise<Served> {
+const shot = (browser: Browser, url: string, state: EvalState) => atState(browser, url, state, async (_, frame) => frame);
+
+export const launch = () => chromium.launch({ args: DETERMINISTIC });
+
+export async function serveTier(app: AppAdapter, tier: Tier): Promise<Served> {
   const dir = tierDir(app, tier);
   if (!existsSync(dir)) throw new Error(`no ${dir}; run ax prepare --app ${app.name}`);
   await app.build(tier, dir);
@@ -56,7 +64,7 @@ export async function evalPixels(app: AppAdapter, tiers: Tier[]): Promise<boolea
   if (!first || !others.length) throw new Error('eval pixels needs at least two tiers to compare');
   const out = join(ROOT, 'results', 'runs', `pixels-${NOW.toISOString().replace(/[:.]/g, '-')}`);
   await app.seed();
-  const browser = await chromium.launch({ args: DETERMINISTIC });
+  const browser = await launch();
   const base = await serveTier(app, first);
   let ok = true;
   try {
