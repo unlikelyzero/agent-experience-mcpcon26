@@ -1,0 +1,591 @@
+diff --git a/src/api/forms/components/FormProperties.vue b/src/api/forms/components/FormProperties.vue
+index 1e4bdf3..68f8c5a 100644
+--- a/src/api/forms/components/FormProperties.vue
++++ b/src/api/forms/components/FormProperties.vue
+@@ -50,20 +50,13 @@
+     </form>
+ 
+     <div class="mct-form__controls c-overlay__button-bar c-form__bottom-bar">
+-      <button
+-        tabindex="0"
+-        :disabled="isInvalid"
+-        class="c-button c-button--major"
+-        aria-label="Save"
+-        @click="onSave"
+-      >
++      <button tabindex="0" :disabled="isInvalid" class="c-button c-button--major" @click="onSave">
+         {{ submitLabel }}
+       </button>
+       <button
+         v-if="!shouldHideCancelButton"
+         tabindex="0"
+         class="c-button js-cancel-button"
+-        aria-label="Cancel"
+         @click="onCancel"
+       >
+         {{ cancelLabel }}
+diff --git a/src/api/forms/components/FormRow.vue b/src/api/forms/components/FormRow.vue
+index ce1c88e..0bb8d30 100644
+--- a/src/api/forms/components/FormRow.vue
++++ b/src/api/forms/components/FormRow.vue
+@@ -22,7 +22,7 @@
+ 
+ <template>
+   <div class="form-row c-form__row" :class="[{ first: first }, cssClass]" @on-change="onChange">
+-    <label class="c-form-row__label" :title="row.description" :for="`form-${row.key}`">
++    <label class="c-form-row__label">
+       {{ row.name }}
+     </label>
+     <div class="c-form-row__state-indicator" :class="reqClass"></div>
+diff --git a/src/api/forms/components/controls/NumberField.vue b/src/api/forms/components/controls/NumberField.vue
+index b5fa9d8..52a5b3d 100644
+--- a/src/api/forms/components/controls/NumberField.vue
++++ b/src/api/forms/components/controls/NumberField.vue
+@@ -26,7 +26,6 @@
+       <input
+         :id="`form-${model.key}`"
+         v-model="field"
+-        :aria-label="model.name"
+         type="number"
+         :min="model.min"
+         :max="model.max"
+diff --git a/src/api/forms/components/controls/SelectField.vue b/src/api/forms/components/controls/SelectField.vue
+index 38c5f18..958e23c 100644
+--- a/src/api/forms/components/controls/SelectField.vue
++++ b/src/api/forms/components/controls/SelectField.vue
+@@ -26,7 +26,6 @@
+       v-model="selected"
+       required="model.required"
+       name="mctControl"
+-      :aria-label="model.ariaLabel || model.name"
+       @change="onChange($event)"
+     >
+       <option v-for="option in model.options" :key="option.name" :value="option.value">
+diff --git a/src/api/menu/components/MenuComponent.vue b/src/api/menu/components/MenuComponent.vue
+index ae5d4d7..55629c3 100644
+--- a/src/api/menu/components/MenuComponent.vue
++++ b/src/api/menu/components/MenuComponent.vue
+@@ -20,7 +20,7 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div :aria-label="optionsLabel" class="c-menu" :class="options.menuClass" :style="styleObject">
++  <div class="c-menu" :class="options.menuClass" :style="styleObject">
+     <ul v-if="options.actions.length && options.actions[0].length" role="menu">
+       <template v-for="(actionGroups, index) in options.actions" :key="index">
+         <div role="group">
+@@ -29,10 +29,8 @@
+             :key="action.name"
+             role="menuitem"
+             :aria-disabled="action.isDisabled"
+-            :aria-label="action.name"
+             aria-describedby="item-description"
+             :class="action.cssClass"
+-            :title="action.description"
+             @click="action.onItemClicked"
+             @mouseover="toggleItem(action)"
+             @mouseleave="toggleItem()"
+@@ -58,8 +56,6 @@
+         aria-describedby="item-description"
+         :aria-disabled="action.isDisabled"
+         :class="action.cssClass"
+-        :aria-label="action.name"
+-        :title="action.description"
+         @click="action.onItemClicked"
+         @mouseover="toggleItem(action)"
+         @mouseleave="toggleItem()"
+diff --git a/src/api/menu/components/SuperMenu.vue b/src/api/menu/components/SuperMenu.vue
+index cd8d72f..189f699 100644
+--- a/src/api/menu/components/SuperMenu.vue
++++ b/src/api/menu/components/SuperMenu.vue
+@@ -20,12 +20,7 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div
+-    :aria-label="optionsLabel"
+-    class="c-menu"
+-    :class="[options.menuClass, 'c-super-menu']"
+-    :style="styleObject"
+-  >
++  <div class="c-menu" :class="[options.menuClass, 'c-super-menu']" :style="styleObject">
+     <ul
+       v-if="options.actions.length && options.actions[0].length"
+       role="menu"
+@@ -63,7 +58,6 @@
+         :key="action.name"
+         role="menuitem"
+         :class="action.cssClass"
+-        :aria-label="action.name"
+         aria-describedby="item-description"
+         @click="action.onItemClicked"
+         @mouseover="toggleItemDescription(action)"
+diff --git a/src/api/overlays/components/OverlayComponent.vue b/src/api/overlays/components/OverlayComponent.vue
+index 72941fd..9fc890a 100644
+--- a/src/api/overlays/components/OverlayComponent.vue
++++ b/src/api/overlays/components/OverlayComponent.vue
+@@ -20,12 +20,11 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div class="c-overlay js-overlay" role="dialog" aria-modal="true" aria-label="Modal Overlay">
++  <div class="c-overlay js-overlay" role="dialog" aria-modal="true">
+     <div class="c-overlay__blocker" @click="destroy"></div>
+     <div class="c-overlay__outer">
+       <button
+         v-if="dismissible"
+-        aria-label="Close"
+         class="c-click-icon c-overlay__close-button icon-x"
+         @click.stop="destroy"
+       ></button>
+diff --git a/src/plugins/flexibleLayout/components/ContainerComponent.vue b/src/plugins/flexibleLayout/components/ContainerComponent.vue
+index f216259..5cb3b85 100644
+--- a/src/plugins/flexibleLayout/components/ContainerComponent.vue
++++ b/src/plugins/flexibleLayout/components/ContainerComponent.vue
+@@ -32,7 +32,6 @@
+       class="c-fl-container__header"
+       draggable="true"
+       role="columnheader"
+-      :aria-label="`Container Handle ${index + 1}`"
+       @dragstart="startContainerDrag"
+     >
+       <span class="c-fl-container__size-indicator">{{ sizeString }}</span>
+@@ -52,7 +51,6 @@
+           :frame="frame"
+           :index="i"
+           role="gridcell"
+-          :aria-label="`Container Frame ${index}`"
+           :container-index="index"
+           :is-editing="isEditing"
+           :object-path="objectPath"
+diff --git a/src/plugins/flexibleLayout/components/FrameComponent.vue b/src/plugins/flexibleLayout/components/FrameComponent.vue
+index 0164f77..951d145 100644
+--- a/src/plugins/flexibleLayout/components/FrameComponent.vue
++++ b/src/plugins/flexibleLayout/components/FrameComponent.vue
+@@ -31,7 +31,6 @@
+       ref="frame"
+       class="c-frame c-fl-frame__drag-wrapper is-selectable u-inspectable is-moveable"
+       :draggable="draggable"
+-      :aria-label="frameLabel"
+       role="group"
+       @dragstart="initDrag"
+     >
+diff --git a/src/plugins/inspectorViews/elements/ElementItem.vue b/src/plugins/inspectorViews/elements/ElementItem.vue
+index f11056e..e69944e 100644
+--- a/src/plugins/inspectorViews/elements/ElementItem.vue
++++ b/src/plugins/inspectorViews/elements/ElementItem.vue
+@@ -24,7 +24,6 @@
+   <li
+     v-if="allowDrag"
+     draggable="true"
+-    :aria-label="`${elementObject.name} Element Item`"
+     :aria-grabbed="hover"
+     @dragstart="emitDragStartEvent"
+     @dragenter="onDragenter"
+@@ -49,7 +48,7 @@
+       <slot name="content"></slot>
+     </div>
+   </li>
+-  <li v-else :aria-label="`${elementObject.name} Element Item`">
++  <li v-else>
+     <div
+       class="c-tree__item c-elements-pool__item js-elements-pool__item"
+       :class="{
+diff --git a/src/plugins/inspectorViews/properties/DetailText.vue b/src/plugins/inspectorViews/properties/DetailText.vue
+index 2f9c057..3c07615 100644
+--- a/src/plugins/inspectorViews/properties/DetailText.vue
++++ b/src/plugins/inspectorViews/properties/DetailText.vue
+@@ -21,11 +21,11 @@
+ -->
+ 
+ <template>
+-  <li class="c-inspect-properties__row" :aria-label="`${detail.name} inspector properties`">
+-    <div class="c-inspect-properties__label" aria-label="inspector property name">
++  <li class="c-inspect-properties__row">
++    <div class="c-inspect-properties__label">
+       {{ detail.name }}
+     </div>
+-    <div class="c-inspect-properties__value" aria-label="inspector property value">
++    <div class="c-inspect-properties__value">
+       {{ detail.value }}
+     </div>
+   </li>
+diff --git a/src/plugins/tabs/components/TabsComponent.vue b/src/plugins/tabs/components/TabsComponent.vue
+index 38dd560..207fcf6 100644
+--- a/src/plugins/tabs/components/TabsComponent.vue
++++ b/src/plugins/tabs/components/TabsComponent.vue
+@@ -38,7 +38,6 @@
+         v-for="(tab, index) in tabsList"
+         :ref="tab.keyString"
+         :key="tab.keyString"
+-        :aria-label="`${tab.domainObject.name} tab${tab.keyString === currentTab.keyString ? ' - selected' : ''}`"
+         class="c-tab c-tabs-view__tab js-tab"
+         role="tab"
+         :class="{
+@@ -54,11 +53,7 @@
+           :class="[tab.status ? `is-status--${tab.status}` : '']"
+         >
+           <div class="c-object-label__type-icon" :class="tab.type.definition.cssClass">
+-            <span
+-              class="is-status__indicator"
+-              :aria-label="`This item is ${tab.status}`"
+-              :title="`This item is ${tab.status}`"
+-            ></span>
++            <span class="is-status__indicator"></span>
+           </div>
+           <span class="c-button__label c-object-label__name">{{ tab.domainObject.name }}</span>
+         </div>
+diff --git a/src/plugins/timeConductor/ConductorComponent.vue b/src/plugins/timeConductor/ConductorComponent.vue
+index 32ba402..607d54c 100644
+--- a/src/plugins/timeConductor/ConductorComponent.vue
++++ b/src/plugins/timeConductor/ConductorComponent.vue
+@@ -48,10 +48,7 @@
+       @pan-axis="pan"
+       @zoom-axis="zoom"
+     />
+-    <ConductorHistory
+-      class="c-conductor__history-select"
+-      title="Select and apply previously entered time intervals."
+-    />
++    <ConductorHistory class="c-conductor__history-select" />
+     <ConductorPopUp
+       v-if="showConductorPopup"
+       ref="conductorPopup"
+diff --git a/src/plugins/timeConductor/ConductorInputsFixed.vue b/src/plugins/timeConductor/ConductorInputsFixed.vue
+index 5d72fda..434e654 100644
+--- a/src/plugins/timeConductor/ConductorInputsFixed.vue
++++ b/src/plugins/timeConductor/ConductorInputsFixed.vue
+@@ -27,19 +27,11 @@
+   />
+   <TimePopupFixed v-else-if="!readOnly" @focus="$event.target.select()" @dismiss="dismiss" />
+   <div v-else class="c-compact-tc__setting-wrapper">
+-    <div
+-      class="c-compact-tc__setting-value u-fade-truncate--lg --no-sep"
+-      :title="`Start bounds: ${formattedBounds.start}`"
+-      :aria-label="`Start bounds: ${formattedBounds.start}`"
+-    >
++    <div class="c-compact-tc__setting-value u-fade-truncate--lg --no-sep">
+       {{ formattedBounds.start }}
+     </div>
+     <div class="c-compact-tc__bounds__start-end-sep icon-arrows-right-left"></div>
+-    <div
+-      class="c-compact-tc__setting-value u-fade-truncate--lg --no-sep"
+-      :title="`End bounds: ${formattedBounds.end}`"
+-      :aria-label="`End bounds: ${formattedBounds.end}`"
+-    >
++    <div class="c-compact-tc__setting-value u-fade-truncate--lg --no-sep">
+       {{ formattedBounds.end }}
+     </div>
+   </div>
+diff --git a/src/plugins/timeConductor/ConductorInputsRealtime.vue b/src/plugins/timeConductor/ConductorInputsRealtime.vue
+index cf2c327..94b7441 100644
+--- a/src/plugins/timeConductor/ConductorInputsRealtime.vue
++++ b/src/plugins/timeConductor/ConductorInputsRealtime.vue
+@@ -30,8 +30,6 @@
+     <div
+       v-if="!compact"
+       class="c-compact-tc__setting-value icon-minus u-fade-truncate--lg --no-sep"
+-      :aria-label="`Start offset: ${formattedOffsets.start}`"
+-      :title="`Start offset: ${formattedOffsets.start}`"
+     >
+       {{ formattedOffsets.start }}
+     </div>
+@@ -40,15 +38,11 @@
+       v-if="!compact"
+       class="c-compact-tc__setting-value icon-plus u-fade-truncate--lg"
+       :class="{ '--no-sep': compact }"
+-      :aria-label="`End offset: ${formattedOffsets.end}`"
+-      :title="`End offset: ${formattedOffsets.end}`"
+     >
+       {{ formattedOffsets.end }}
+     </div>
+     <div
+       class="c-compact-tc__setting-value icon-clock c-compact-tc__current-update u-fade-truncate--lg --no-sep"
+-      aria-label="Last update"
+-      title="Last update"
+     >
+       {{ formattedCurrentValue }}
+     </div>
+diff --git a/src/plugins/timeConductor/ConductorMode.vue b/src/plugins/timeConductor/ConductorMode.vue
+index da631bc..40a6877 100644
+--- a/src/plugins/timeConductor/ConductorMode.vue
++++ b/src/plugins/timeConductor/ConductorMode.vue
+@@ -25,19 +25,13 @@
+       <button
+         class="c-button--menu js-mode-button c-icon-button"
+         :class="selectedMode.cssClass"
+-        aria-label="Time Conductor Mode Menu"
+         @click.prevent.stop="showModesMenu"
+       >
+         <span class="c-button__label">{{ selectedMode.name }}</span>
+       </button>
+     </div>
+   </div>
+-  <div
+-    v-else
+-    role="button"
+-    class="c-compact-tc__setting-value__elem"
+-    aria-label="Time Conductor Mode"
+-  >
++  <div v-else role="button" class="c-compact-tc__setting-value__elem">
+     {{ selectedMode.name }}
+   </div>
+ </template>
+diff --git a/src/plugins/timeConductor/TimePopupFixed.vue b/src/plugins/timeConductor/TimePopupFixed.vue
+index ec7488a..1c6a590 100644
+--- a/src/plugins/timeConductor/TimePopupFixed.vue
++++ b/src/plugins/timeConductor/TimePopupFixed.vue
+@@ -34,7 +34,6 @@
+           type="text"
+           autocorrect="off"
+           spellcheck="false"
+-          aria-label="Start time"
+           @input="validateInput('start')"
+           @change="reportValidity('start')"
+           @copy.prevent.stop="copyToClipboard('start')"
+@@ -58,7 +57,6 @@
+           type="text"
+           autocorrect="off"
+           spellcheck="false"
+-          aria-label="End time"
+           @input="validateInput('end')"
+           @change="reportValidity('end')"
+           @copy.prevent.stop="copyToClipboard('end')"
+@@ -76,14 +74,9 @@
+         <button
+           class="c-button c-button--major icon-check"
+           :disabled="hasInputValidityError"
+-          aria-label="Submit time bounds"
+           @click.prevent="submitForm(true)"
+         ></button>
+-        <button
+-          class="c-button icon-x"
+-          aria-label="Discard changes and close time popup"
+-          @click.prevent="hide"
+-        ></button>
++        <button class="c-button icon-x" @click.prevent="hide"></button>
+       </div>
+     </div>
+   </form>
+diff --git a/src/ui/components/ObjectLabel.vue b/src/ui/components/ObjectLabel.vue
+index 9278f8f..5a1416e 100644
+--- a/src/ui/components/ObjectLabel.vue
++++ b/src/ui/components/ObjectLabel.vue
+@@ -25,16 +25,11 @@
+     class="c-tree__item__label c-object-label"
+     :class="[statusClass]"
+     draggable="true"
+-    :aria-label="ariaLabel"
+     @dragstart="dragStart"
+     @click="navigateOrPreview"
+   >
+     <div class="c-tree__item__type-icon c-object-label__type-icon" :class="typeClass">
+-      <span
+-        class="is-status__indicator"
+-        :aria-label="`This item is ${status}`"
+-        :title="`This item is ${status}`"
+-      ></span>
++      <span class="is-status__indicator"></span>
+     </div>
+     <div
+       ref="objectLabel"
+diff --git a/src/ui/components/ViewControl.vue b/src/ui/components/ViewControl.vue
+index b6799f7..e84075f 100644
+--- a/src/ui/components/ViewControl.vue
++++ b/src/ui/components/ViewControl.vue
+@@ -24,7 +24,6 @@
+     :class="[controlClass, { 'c-disclosure-triangle--expanded': value }, { 'is-enabled': enabled }]"
+     tabindex="0"
+     role="button"
+-    :aria-label="ariaLabelValue"
+     :aria-expanded="value ? 'true' : 'false'"
+     @click="handleClick"
+     @keydown.enter="handleClick"
+diff --git a/src/ui/inspector/InspectorTabs.vue b/src/ui/inspector/InspectorTabs.vue
+index ce2e0b9..32e9b1f 100644
+--- a/src/ui/inspector/InspectorTabs.vue
++++ b/src/ui/inspector/InspectorTabs.vue
+@@ -29,7 +29,6 @@
+       class="c-inspector__tab c-tab"
+       :class="{ 'is-current': isSelected(tab) }"
+       tabindex="0"
+-      :title="tab.name"
+       @click="selectTab(tab)"
+       @keydown.enter="selectTab(tab)"
+     >
+diff --git a/src/ui/inspector/ObjectName.vue b/src/ui/inspector/ObjectName.vue
+index 9236a25..8723d4c 100644
+--- a/src/ui/inspector/ObjectName.vue
++++ b/src/ui/inspector/ObjectName.vue
+@@ -24,11 +24,7 @@
+   <div class="c-inspector__header">
+     <div v-if="!multiSelect" class="c-inspector__selected c-object-label" :class="[statusClass]">
+       <div class="c-object-label__type-icon" :class="typeCssClass">
+-        <span
+-          class="is-status__indicator"
+-          :aria-label="`This item is ${status}`"
+-          :title="`This item is ${status}`"
+-        ></span>
++        <span class="is-status__indicator"></span>
+       </div>
+       <span v-if="!singleSelectNonObject" class="c-inspector__selected c-object-label__name">{{
+         item.name
+diff --git a/src/ui/layout/BrowseBar.vue b/src/ui/layout/BrowseBar.vue
+index d1fba97..b4c6a21 100644
+--- a/src/ui/layout/BrowseBar.vue
++++ b/src/ui/layout/BrowseBar.vue
+@@ -20,22 +20,19 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div class="l-browse-bar" aria-label="Browse bar">
++  <div class="l-browse-bar">
+     <div class="l-browse-bar__start">
+       <button
+         v-if="hasParent"
+-        aria-label="Navigate up to parent"
+         class="l-browse-bar__nav-to-parent-button c-icon-button c-icon-button--major icon-arrow-nav-to-parent"
+-        title="Navigate up to parent"
+         @click="goToParent"
+       ></button>
+       <div class="l-browse-bar__object-name--w c-object-label" :class="[statusClass]">
+         <div class="c-object-label__type-icon" :class="cssClass">
+-          <span class="is-status__indicator" :title="`This item is ${status}`"></span>
++          <span class="is-status__indicator"></span>
+         </div>
+         <span
+           ref="objectName"
+-          aria-label="Browse bar object name"
+           class="l-browse-bar__object-name c-object-label__name"
+           :class="{ 'c-input-inline': isPersistable }"
+           :contenteditable="isNameEditable"
+@@ -73,16 +70,12 @@
+           v-for="(item, index) in statusBarItems"
+           :key="index"
+           class="c-button"
+-          :aria-label="item.name"
+-          :title="item.name"
+           :class="item.cssClass"
+           @click="item.onItemClicked"
+         ></button>
+ 
+         <button
+           v-if="shouldShowLock"
+-          :aria-label="lockedOrUnlockedTitle"
+-          :title="lockedOrUnlockedTitle"
+           :class="{
+             'c-button icon-lock': domainObject.locked,
+             'c-icon-button icon-unlocked': !domainObject.locked
+@@ -90,18 +83,11 @@
+           @click="toggleLock(!domainObject.locked)"
+         ></button>
+ 
+-        <span
+-          v-else-if="domainObject?.locked"
+-          class="icon-lock"
+-          aria-label="Locked for editing, cannot be unlocked."
+-          title="Locked for editing, cannot be unlocked."
+-        ></span>
++        <span v-else-if="domainObject?.locked" class="icon-lock"></span>
+ 
+         <button
+           v-if="isViewEditable && !isEditing && !domainObject.locked"
+           class="l-browse-bar__actions__edit c-button c-button--major icon-pencil"
+-          title="Edit Object"
+-          aria-label="Edit Object"
+           @click="edit()"
+         ></button>
+ 
+@@ -111,22 +97,12 @@
+         >
+           <button
+             class="c-button--menu c-button--major icon-save"
+-            title="Save"
+-            aria-label="Save"
+             @click.stop="toggleSaveMenu"
+           ></button>
+           <div v-show="showSaveMenu" class="c-menu">
+             <ul>
+-              <li class="icon-save" title="Save and Finish Editing" @click="saveAndFinishEditing">
+-                Save and Finish Editing
+-              </li>
+-              <li
+-                class="icon-save"
+-                title="Save and Continue Editing"
+-                @click="saveAndContinueEditing"
+-              >
+-                Save and Continue Editing
+-              </li>
++              <li class="icon-save" @click="saveAndFinishEditing">Save and Finish Editing</li>
++              <li class="icon-save" @click="saveAndContinueEditing">Save and Continue Editing</li>
+             </ul>
+           </div>
+         </div>
+@@ -134,14 +110,10 @@
+         <button
+           v-if="isEditing"
+           class="l-browse-bar__actions c-button icon-x"
+-          aria-label="Cancel Editing"
+-          title="Cancel Editing"
+           @click="promptUserandCancelEditing()"
+         ></button>
+         <button
+           class="l-browse-bar__actions c-icon-button icon-3-dots"
+-          title="More actions"
+-          aria-label="More actions"
+           @click.prevent.stop="showMenuItems($event)"
+         ></button>
+       </div>
+diff --git a/src/ui/layout/CreateButton.vue b/src/ui/layout/CreateButton.vue
+index 5c22ce0..4b16b1b 100644
+--- a/src/ui/layout/CreateButton.vue
++++ b/src/ui/layout/CreateButton.vue
+@@ -24,7 +24,6 @@
+     <button
+       class="c-create-button c-button--menu c-button--major icon-plus"
+       :aria-disabled="isEditing"
+-      aria-labelledby="create-button-label"
+       @click.prevent.stop="showCreateMenu"
+     >
+       <span id="create-button-label" class="c-button__label">Create</span>
+diff --git a/src/ui/layout/MctTree.vue b/src/ui/layout/MctTree.vue
+index cc1d349..3569662 100644
+--- a/src/ui/layout/MctTree.vue
++++ b/src/ui/layout/MctTree.vue
+@@ -50,13 +50,7 @@
+     <div v-if="showNoSearchResults" class="c-tree-and-search__no-results">No results found</div>
+ 
+     <!-- main tree -->
+-    <div
+-      ref="mainTree"
+-      class="c-tree-and-search__tree c-tree"
+-      role="tree"
+-      :aria-label="getAriaLabel"
+-      aria-expanded="true"
+-    >
++    <div ref="mainTree" class="c-tree-and-search__tree c-tree" role="tree" aria-expanded="true">
+       <div
+         ref="dummyItem"
+         class="c-tree__item-h"
+@@ -66,7 +60,7 @@
+           <span class="c-tree__item__view-control c-nav__up is-enabled"></span>
+           <a class="c-tree__item__label c-object-label" draggable="true" href="#">
+             <div class="c-tree__item__type-icon c-object-label__type-icon icon-folder">
+-              <span title="Open MCT"></span>
++              <span></span>
+             </div>
+             <div class="c-tree__item__name c-object-label__name">Open MCT</div>
+           </a>
+diff --git a/src/ui/layout/ViewSwitcher.vue b/src/ui/layout/ViewSwitcher.vue
+index 0c62325..6496fc9 100644
+--- a/src/ui/layout/ViewSwitcher.vue
++++ b/src/ui/layout/ViewSwitcher.vue
+@@ -27,8 +27,6 @@
+     <button
+       class="c-icon-button c-button--menu"
+       :class="currentView.cssClass"
+-      :title="viewSwitcherLabel"
+-      :aria-label="viewSwitcherLabel"
+       @click.prevent.stop="showMenu"
+     >
+       <span class="c-icon-button__label">
