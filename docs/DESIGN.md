@@ -69,8 +69,10 @@ Rules for every level patch:
 | L1 | Scale dialog, `ConfirmDialog` | No dialog name or description (`PaperProps` unties MUI's title link); no names on the −/+ Fabs; replica input not labelled by its caption | Done |
 | L1 | Delete dialog's Force Delete, Namespaces filter | Wrapping `<label>` becomes a div; `InputLabel` loses `htmlFor` | Done |
 | L1 | Table toolbar, row checkboxes | Left named: material-react-table builds those names from its localization strings, which also feed the visible tooltips. No task needs them; rows are reached by their name links, whose names are visible text | Out of scope |
-| L2 | `ActionButton`, menus, tabs, table row checkboxes | `<div onClick>`; no role | Not started |
-| L2 | MUI `Dialog` | Override `role="dialog"` on the Paper via `PaperProps` | Not started |
+| L2 | `ActionButton` (icon and menu forms), Scale dialog Fabs and buttons, `ConfirmDialog` buttons, delete split-button menu | `<div onClick>` with no role or tab stop: `asDiv` (`frontend/src/lib/ax.ts`) passes `component: 'div'` and `null` role/tabIndex to ButtonBase | Done |
+| L2 | Scale dialog, `ConfirmDialog` | Override `role="dialog"` on the Paper via `PaperProps` | Done |
+| L2 | Layout `<main>`, sidebar and top bar `<nav>` | Plain divs; no landmarks | Done |
+| L2 | Tabs, table row checkboxes, Force Delete checkbox | Not on any task path | Out of scope |
 | L3 | Tabs, expandable rows, snackbars | Drop state attrs and live regions; suffix key classes | Not started |
 
 ### what-iff catalog
@@ -227,6 +229,12 @@ then `ax prepare --force` so higher levels are rebuilt on the new patch.
   when the child has none, so removing `aria-label` alone does nothing; pass
   the title as an element. MUI `Dialog` puts `role="dialog"` on its Paper;
   override with `PaperProps`.
+- **A div opener rings the dialog.** Clicking a native button tells Chromium
+  focus came from the mouse; clicking a div does not, so the dialog's
+  programmatic focus then matches `:focus-visible` and draws an outline L0
+  never shows. L2 suppresses that outline on `ConfirmDialog`'s content.
+- **MUI defaults `undefined`.** ButtonBase's `tabIndex` and MenuItem's `role`
+  fall back to their defaults when passed `undefined`; pass `null`.
 - **Headlamp's classes are already hashed** (emotion `css-…`) at L0, so L3's
   class suffixing matters less there than in what-iff.
 - **Headlamp delays its writes.** Scale, delete and suspend show an undo

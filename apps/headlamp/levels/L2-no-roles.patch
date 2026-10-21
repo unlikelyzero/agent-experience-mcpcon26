@@ -1,0 +1,241 @@
+diff --git a/frontend/src/components/App/Layout.tsx b/frontend/src/components/App/Layout.tsx
+index 4ab1888..69e26cf 100644
+--- a/frontend/src/components/App/Layout.tsx
++++ b/frontend/src/components/App/Layout.tsx
+@@ -88,7 +88,8 @@ function ClusterNotFoundPopup({ cluster }: { cluster?: string }) {
+   );
+ }
+ const Div = styled('div')``;
+-const Main = styled('main')``;
++// AX L2: no main landmark.
++const Main = styled('div')``;
+ 
+ /**
+  * Merges the new cluster with the current cluster.
+diff --git a/frontend/src/components/App/TopBar.tsx b/frontend/src/components/App/TopBar.tsx
+index 37c5a65..1e23100 100644
+--- a/frontend/src/components/App/TopBar.tsx
++++ b/frontend/src/components/App/TopBar.tsx
+@@ -573,7 +573,8 @@ export const PureTopBar = memo(
+             borderColor: theme.palette.divider,
+           })}
+           elevation={1}
+-          component="nav"
++          // AX L2: no navigation landmark; AppBar's default is a header (banner), so a div.
++          component="div"
+           aria-label={t('Appbar Tools')}
+           enableColorOnDark
+         >
+diff --git a/frontend/src/components/Sidebar/Sidebar.tsx b/frontend/src/components/Sidebar/Sidebar.tsx
+index 636bb5d..c3ee8fd 100644
+--- a/frontend/src/components/Sidebar/Sidebar.tsx
++++ b/frontend/src/components/Sidebar/Sidebar.tsx
+@@ -420,7 +420,7 @@ export const PureSidebar = memo(
+ 
+     return (
+       <Box
+-        component="nav"
++        // AX L2: no navigation landmark.
+         aria-label={t('translation|Navigation')}
+         sx={{ minHeight: 0, gridColumn: '1 / 2', gridRow: '1 / 3' }}
+       >
+diff --git a/frontend/src/components/common/ActionButton/ActionButton.tsx b/frontend/src/components/common/ActionButton/ActionButton.tsx
+index b7e6291..39813c7 100644
+--- a/frontend/src/components/common/ActionButton/ActionButton.tsx
++++ b/frontend/src/components/common/ActionButton/ActionButton.tsx
+@@ -21,6 +21,7 @@ import ListItemText from '@mui/material/ListItemText';
+ import MenuItem from '@mui/material/MenuItem';
+ import Tooltip from '@mui/material/Tooltip';
+ import React from 'react';
++import { asDiv } from '../../../lib/ax';
+ 
+ export type ButtonStyle = 'action' | 'menu';
+ 
+@@ -75,6 +76,7 @@ export default function ActionButton({
+   if (buttonStyle === 'menu') {
+     return (
+       <MenuItem
++        {...asDiv}
+         disabled={isDisabled}
+         onClick={isDisabled ? preventDisabledActivation : onClick}
+         onKeyDown={
+@@ -97,7 +99,14 @@ export default function ActionButton({
+   // AX L1: no accessible name. A string Tooltip title would be copied into aria-label,
+   // so the title is passed as an element, and any caller-supplied aria-label is dropped.
+   const button = (
+-    <IconButton onClick={onClick} edge={edge} size="medium" {...iconButtonProps} aria-label={undefined}>
++    <IconButton
++      onClick={onClick}
++      edge={edge}
++      size="medium"
++      {...iconButtonProps}
++      aria-label={undefined}
++      {...asDiv}
++    >
+       <Icon icon={icon} color={color} width={width} {...iconProps} />
+     </IconButton>
+   );
+@@ -106,9 +115,7 @@ export default function ActionButton({
+     <Tooltip title={<>{longDescription || description}</>}>
+       {isDisabled ? (
+         <span
+-          role="button"
+           aria-disabled="true"
+-          tabIndex={0}
+           onClick={preventDisabledActivation}
+           onKeyDown={event => {
+             if (event.key === 'Enter' || event.key === ' ') {
+@@ -117,7 +124,7 @@ export default function ActionButton({
+           }}
+           style={{ display: 'inline-flex' }}
+         >
+-          {React.cloneElement(button, { 'aria-hidden': true, tabIndex: -1 })}
++          {React.cloneElement(button, { 'aria-hidden': true })}
+         </span>
+       ) : (
+         button
+diff --git a/frontend/src/components/common/ConfirmDialog.tsx b/frontend/src/components/common/ConfirmDialog.tsx
+index 71f1827..e8e2280 100644
+--- a/frontend/src/components/common/ConfirmDialog.tsx
++++ b/frontend/src/components/common/ConfirmDialog.tsx
+@@ -22,6 +22,7 @@ import DialogContentText from '@mui/material/DialogContentText';
+ import React, { ReactNode } from 'react';
+ import { useTranslation } from 'react-i18next';
+ import { DialogTitle } from './Dialog';
++import { asDiv, noDialogRole } from '../../lib/ax';
+ 
+ export interface ConfirmDialogProps extends MuiDialogProps {
+   title: string;
+@@ -78,6 +79,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+           // AX L1: no accessible name or description; MUI would otherwise link the title itself.
+           'aria-labelledby': undefined,
+           'aria-describedby': undefined,
++          ...noDialogRole,
+           sx: [
+             { minWidth: 'clamp(280px, 25vw, 600px)' },
+             ...(Array.isArray(muiDialogProps.PaperProps?.sx)
+@@ -87,7 +89,9 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+         }}
+       >
+         <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
+-        <DialogContent ref={focusedRef} sx={{ py: 1 }}>
++        {/* AX L2: the opener is a div, so the browser no longer knows focus came from a mouse
++            and would ring the content it focuses; suppress the ring to keep the L0 look. */}
++        <DialogContent ref={focusedRef} sx={{ py: 1, '&:focus-visible': { outline: 'none' } }}>
+           <DialogContentText id="alert-dialog-description" component="div">
+             {description}
+           </DialogContentText>
+@@ -95,6 +99,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+         <DialogActions>
+           {!hideCancelButton && (
+             <Button
++              {...asDiv}
+               onClick={handleClose}
+               data-testid="cancel-button"
+               color="secondary"
+@@ -104,6 +109,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+             </Button>
+           )}
+           <Button
++            {...asDiv}
+             onClick={onConfirmationClicked}
+             data-testid="confirm-button"
+             color="primary"
+diff --git a/frontend/src/components/common/Resource/DeleteButton.tsx b/frontend/src/components/common/Resource/DeleteButton.tsx
+index 05c5170..17c5f1e 100644
+--- a/frontend/src/components/common/Resource/DeleteButton.tsx
++++ b/frontend/src/components/common/Resource/DeleteButton.tsx
+@@ -40,6 +40,7 @@ import { AppDispatch } from '../../../redux/stores/store';
+ import { useSettings } from '../../App/Settings/hook';
+ import ActionButton, { ButtonStyle } from '../ActionButton';
+ import { ConfirmDialog } from '../Dialog';
++import { asDiv, plainMenuList } from '../../../lib/ax';
+ import AuthVisible from './AuthVisible';
+ 
+ type DeleteAction = 'delete' | 'evict';
+@@ -212,12 +213,13 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                 }}
+               />
+               <Menu
++                MenuListProps={plainMenuList}
+                 id={menuId}
+                 anchorEl={menuAnchorEl}
+                 open={Boolean(menuAnchorEl)}
+                 onClose={() => setMenuAnchorEl(null)}
+               >
+-                <MenuItem onClick={() => openDialogFor(alternateAction)}>
++                <MenuItem {...asDiv} onClick={() => openDialogFor(alternateAction)}>
+                   {label(alternateAction)}
+                 </MenuItem>
+               </Menu>
+diff --git a/frontend/src/components/common/Resource/ScaleButton.tsx b/frontend/src/components/common/Resource/ScaleButton.tsx
+index f7c9b12..45d29e0 100644
+--- a/frontend/src/components/common/Resource/ScaleButton.tsx
++++ b/frontend/src/components/common/Resource/ScaleButton.tsx
+@@ -41,6 +41,7 @@ import {
+ import { AppDispatch } from '../../../redux/stores/store';
+ import ActionButton, { ButtonStyle } from '../ActionButton';
+ import { LightTooltip } from '../Tooltip';
++import { asDiv, noDialogRole } from '../../../lib/ax';
+ import AuthVisible from './AuthVisible';
+ 
+ interface ScaleButtonProps {
+@@ -153,7 +154,7 @@ function ScaleDialog(props: ScaleDialogProps) {
+       onClose={onClose}
+       fullWidth
+       maxWidth="sm"
+-      PaperProps={{ 'aria-labelledby': undefined }}
++      PaperProps={{ 'aria-labelledby': undefined, ...noDialogRole }}
+     >
+       <DialogTitle>{t('Scale Replicas')}</DialogTitle>
+       <DialogContent
+@@ -178,6 +179,7 @@ function ScaleDialog(props: ScaleDialogProps) {
+             </Grid>
+             <Grid item spacing={2} sm="auto" sx={{ padding: '6px', textAlign: 'left' }}>
+               <Fab
++                {...asDiv}
+                 size="small"
+                 color="secondary"
+                 onClick={() => setNumReplicas(numReplicas => Math.max(0, numReplicas - 1))}
+@@ -199,6 +201,7 @@ function ScaleDialog(props: ScaleDialogProps) {
+               />
+ 
+               <Fab
++                {...asDiv}
+                 size="small"
+                 color="secondary"
+                 onClick={() => setNumReplicas(numReplicas => numReplicas + 1)}
+@@ -222,10 +225,11 @@ function ScaleDialog(props: ScaleDialogProps) {
+         </Grid>
+       </DialogContent>
+       <DialogActions>
+-        <Button onClick={onClose} color="secondary" variant="contained">
++        <Button {...asDiv} onClick={onClose} color="secondary" variant="contained">
+           {t('translation|Cancel')}
+         </Button>
+         <Button
++          {...asDiv}
+           onClick={() => {
+             onSave(numReplicas);
+             dispatchHeadlampEvent({
+diff --git a/frontend/src/lib/ax.ts b/frontend/src/lib/ax.ts
+new file mode 100644
+index 0000000..c28bb2d
+--- /dev/null
++++ b/frontend/src/lib/ax.ts
+@@ -0,0 +1,15 @@
++/**
++ * AX L2: spread onto a MUI ButtonBase control (Button, IconButton, Fab, MenuItem) to render
++ * it as a plain div with no role and no tab stop. The look is unchanged: ButtonBase already
++ * resets the native button's styles. `null`, not `undefined`, because MUI defaults
++ * `tabIndex` (and MenuItem's `role`) when the prop is undefined.
++ */
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export const asDiv: any = { component: 'div', role: null, tabIndex: null };
++
++/** AX L2: spread into a Dialog's PaperProps to drop `role="dialog"`. */
++export const noDialogRole = { role: undefined };
++
++/** AX L2: MenuListProps for a Menu with no menu or list role and no tab stop. */
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export const plainMenuList: any = { component: 'div', role: null, tabIndex: null };
