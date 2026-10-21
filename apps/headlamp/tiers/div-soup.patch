@@ -1,0 +1,435 @@
+diff --git a/frontend/src/components/App/AppContainer.tsx b/frontend/src/components/App/AppContainer.tsx
+index d5a9391..5ae0734 100644
+--- a/frontend/src/components/App/AppContainer.tsx
++++ b/frontend/src/components/App/AppContainer.tsx
+@@ -15,7 +15,7 @@
+  */
+ 
+ import GlobalStyles from '@mui/material/GlobalStyles';
+-import { SnackbarProvider } from 'notistack';
++import { MaterialDesignContent, SnackbarProvider } from 'notistack';
+ import React, { useEffect } from 'react';
+ import { BrowserRouter, HashRouter, useHistory, useLocation } from 'react-router-dom';
+ import { DesktopBackendApi, initializeDesktopBackend } from '../../helpers/backendTokenFetch';
+@@ -28,6 +28,31 @@ import { uiSlice } from '../../redux/uiSlice';
+ import ReleaseNotes from '../common/ReleaseNotes/ReleaseNotes';
+ import { MonacoEditorLoaderInitializer } from '../monaco/MonacoEditorLoaderInitializer';
+ import Layout from './Layout';
++
++/**
++ * AX div soup: notistack's content hardcodes role="alert", so strip it (and the description link)
++ * from the rendered node. React leaves the attributes alone afterwards: its props never change.
++ */
++const SilentSnackbar = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof MaterialDesignContent>>(
++  (props, ref) => (
++    <MaterialDesignContent
++      {...props}
++      ref={node => {
++        node?.removeAttribute('role');
++        node?.removeAttribute('aria-describedby');
++        if (typeof ref === 'function') ref(node);
++        else if (ref) ref.current = node;
++      }}
++    />
++  )
++);
++const silentSnackbars = {
++  default: SilentSnackbar,
++  success: SilentSnackbar,
++  error: SilentSnackbar,
++  warning: SilentSnackbar,
++  info: SilentSnackbar,
++};
+ import { PreviousRouteProvider } from './RouteSwitcher';
+ 
+ // Listen for the open-about-dialog event from the Electron app menu
+@@ -188,6 +213,7 @@ export default function AppContainer() {
+ 
+   return (
+     <SnackbarProvider
++      Components={silentSnackbars}
+       anchorOrigin={{
+         vertical: 'bottom',
+         horizontal: 'left',
+diff --git a/frontend/src/components/App/Layout.tsx b/frontend/src/components/App/Layout.tsx
+index 4ab1888..ccd0ce0 100644
+--- a/frontend/src/components/App/Layout.tsx
++++ b/frontend/src/components/App/Layout.tsx
+@@ -88,7 +88,8 @@ function ClusterNotFoundPopup({ cluster }: { cluster?: string }) {
+   );
+ }
+ const Div = styled('div')``;
+-const Main = styled('main')``;
++// AX div soup: no main landmark.
++const Main = styled('div')``;
+ 
+ /**
+  * Merges the new cluster with the current cluster.
+diff --git a/frontend/src/components/App/TopBar.tsx b/frontend/src/components/App/TopBar.tsx
+index 37c5a65..99e21a1 100644
+--- a/frontend/src/components/App/TopBar.tsx
++++ b/frontend/src/components/App/TopBar.tsx
+@@ -573,7 +573,8 @@ export const PureTopBar = memo(
+             borderColor: theme.palette.divider,
+           })}
+           elevation={1}
+-          component="nav"
++          // AX div soup: no navigation landmark; AppBar's default is a header (banner), so a div.
++          component="div"
+           aria-label={t('Appbar Tools')}
+           enableColorOnDark
+         >
+diff --git a/frontend/src/components/Sidebar/Sidebar.tsx b/frontend/src/components/Sidebar/Sidebar.tsx
+index 636bb5d..6571e31 100644
+--- a/frontend/src/components/Sidebar/Sidebar.tsx
++++ b/frontend/src/components/Sidebar/Sidebar.tsx
+@@ -420,7 +420,7 @@ export const PureSidebar = memo(
+ 
+     return (
+       <Box
+-        component="nav"
++        // AX div soup: no navigation landmark.
+         aria-label={t('translation|Navigation')}
+         sx={{ minHeight: 0, gridColumn: '1 / 2', gridRow: '1 / 3' }}
+       >
+diff --git a/frontend/src/components/common/ActionButton/ActionButton.tsx b/frontend/src/components/common/ActionButton/ActionButton.tsx
+index 35f64e9..8bcf732 100644
+--- a/frontend/src/components/common/ActionButton/ActionButton.tsx
++++ b/frontend/src/components/common/ActionButton/ActionButton.tsx
+@@ -21,6 +21,7 @@ import ListItemText from '@mui/material/ListItemText';
+ import MenuItem from '@mui/material/MenuItem';
+ import Tooltip from '@mui/material/Tooltip';
+ import React from 'react';
++import { asDiv } from '../../../lib/ax';
+ 
+ export type ButtonStyle = 'action' | 'menu';
+ 
+@@ -75,6 +76,7 @@ export default function ActionButton({
+   if (buttonStyle === 'menu') {
+     return (
+       <MenuItem
++        {...asDiv}
+         disabled={isDisabled}
+         onClick={isDisabled ? preventDisabledActivation : onClick}
+         onKeyDown={
+@@ -94,27 +96,26 @@ export default function ActionButton({
+       </MenuItem>
+     );
+   }
+-  const buttonLabel = iconButtonProps?.['aria-label'] ?? description;
++  // AX div soup: no accessible name. A string Tooltip title would be copied into aria-label,
++  // so the title is passed as an element, and any caller-supplied aria-label is dropped.
+   const button = (
+     <IconButton
+-      aria-label={buttonLabel}
+       onClick={onClick}
+       edge={edge}
+       size="medium"
+       {...iconButtonProps}
++      aria-label={undefined}
++      {...asDiv}
+     >
+       <Icon icon={icon} color={color} width={width} {...iconProps} />
+     </IconButton>
+   );
+ 
+   return (
+-    <Tooltip title={longDescription || description}>
++    <Tooltip title={<>{longDescription || description}</>}>
+       {isDisabled ? (
+         <span
+-          role="button"
+-          aria-label={buttonLabel}
+           aria-disabled="true"
+-          tabIndex={0}
+           onClick={preventDisabledActivation}
+           onKeyDown={event => {
+             if (event.key === 'Enter' || event.key === ' ') {
+@@ -123,7 +124,7 @@ export default function ActionButton({
+           }}
+           style={{ display: 'inline-flex' }}
+         >
+-          {React.cloneElement(button, { 'aria-hidden': true, tabIndex: -1 })}
++          {React.cloneElement(button, { 'aria-hidden': true })}
+         </span>
+       ) : (
+         button
+diff --git a/frontend/src/components/common/ConfirmDialog.tsx b/frontend/src/components/common/ConfirmDialog.tsx
+index aad4a75..8f34625 100644
+--- a/frontend/src/components/common/ConfirmDialog.tsx
++++ b/frontend/src/components/common/ConfirmDialog.tsx
+@@ -22,6 +22,7 @@ import DialogContentText from '@mui/material/DialogContentText';
+ import React, { ReactNode } from 'react';
+ import { useTranslation } from 'react-i18next';
+ import { DialogTitle } from './Dialog';
++import { asDiv, noDialogRole } from '../../lib/ax';
+ 
+ export interface ConfirmDialogProps extends MuiDialogProps {
+   title: string;
+@@ -73,10 +74,12 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+         {...muiDialogProps}
+         open={open}
+         onClose={handleClose}
+-        aria-labelledby="alert-dialog-title"
+-        aria-describedby="alert-dialog-description"
+         PaperProps={{
+           ...muiDialogProps.PaperProps,
++          // AX div soup: no accessible name or description; MUI would otherwise link the title itself.
++          'aria-labelledby': undefined,
++          'aria-describedby': undefined,
++          ...noDialogRole,
+           sx: [
+             { minWidth: 'clamp(280px, 25vw, 600px)' },
+             ...(Array.isArray(muiDialogProps.PaperProps?.sx)
+@@ -86,7 +89,9 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+         }}
+       >
+         <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
+-        <DialogContent ref={focusedRef} sx={{ py: 1 }}>
++        {/* AX div soup: the opener is a div, so the browser no longer knows focus came from a mouse
++            and would ring the content it focuses; suppress the ring to keep the L0 look. */}
++        <DialogContent ref={focusedRef} sx={{ py: 1, '&:focus-visible': { outline: 'none' } }}>
+           <DialogContentText id="alert-dialog-description" component="div">
+             {description}
+           </DialogContentText>
+@@ -94,6 +99,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+         <DialogActions>
+           {!hideCancelButton && (
+             <Button
++              {...asDiv}
+               onClick={handleClose}
+               data-testid="cancel-button"
+               color="secondary"
+@@ -103,6 +109,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
+             </Button>
+           )}
+           <Button
++            {...asDiv}
+             onClick={onConfirmationClicked}
+             data-testid="confirm-button"
+             color="primary"
+diff --git a/frontend/src/components/common/NamespacesAutocomplete.tsx b/frontend/src/components/common/NamespacesAutocomplete.tsx
+index c5995ec..dc34dff 100644
+--- a/frontend/src/components/common/NamespacesAutocomplete.tsx
++++ b/frontend/src/components/common/NamespacesAutocomplete.tsx
+@@ -183,7 +183,8 @@ export function PureNamespacesAutocomplete({
+             size="small"
+             label={t('Namespaces')}
+             fullWidth
+-            InputLabelProps={{ shrink: true }}
++            // AX div soup: the visible "Namespaces" label is not tied to the input.
++            InputLabelProps={{ shrink: true, htmlFor: undefined }}
+             style={{ marginTop: 0 }}
+             placeholder={[...filter.namespaces.values()].length > 0 ? '' : t('Filter')}
+           />
+diff --git a/frontend/src/components/common/Resource/CopyButton.tsx b/frontend/src/components/common/Resource/CopyButton.tsx
+index 9b162c6..b1b96cf 100644
+--- a/frontend/src/components/common/Resource/CopyButton.tsx
++++ b/frontend/src/components/common/Resource/CopyButton.tsx
+@@ -70,7 +70,8 @@ export default function CopyButton(props: CopyButtonProps) {
+         iconButtonProps={iconButtonProps}
+         width={width}
+       />
+-      <Box role="status" aria-live="polite" aria-atomic="true" sx={visuallyHidden}>
++      {/* AX div soup: no live region; the text is still there, just never announced. */}
++      <Box sx={visuallyHidden}>
+         {copied ? t('translation|Copied!') : ''}
+       </Box>
+     </>
+diff --git a/frontend/src/components/common/Resource/DeleteButton.tsx b/frontend/src/components/common/Resource/DeleteButton.tsx
+index ae87466..bb61baf 100644
+--- a/frontend/src/components/common/Resource/DeleteButton.tsx
++++ b/frontend/src/components/common/Resource/DeleteButton.tsx
+@@ -40,6 +40,7 @@ import { AppDispatch } from '../../../redux/stores/store';
+ import { useSettings } from '../../App/Settings/hook';
+ import ActionButton, { ButtonStyle } from '../ActionButton';
+ import { ConfirmDialog } from '../Dialog';
++import { asDiv, plainMenuList } from '../../../lib/ax';
+ import AuthVisible from './AuthVisible';
+ 
+ type DeleteAction = 'delete' | 'evict';
+@@ -205,19 +206,16 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                   setMenuAnchorEl(event.currentTarget)
+                 }
+                 icon="mdi:menu-down"
+-                iconButtonProps={{
+-                  'aria-haspopup': 'true',
+-                  'aria-expanded': Boolean(menuAnchorEl),
+-                  'aria-controls': Boolean(menuAnchorEl) ? menuId : undefined,
+-                }}
++                // AX div soup: no popup, expanded or controls state.
+               />
+               <Menu
++                MenuListProps={plainMenuList}
+                 id={menuId}
+                 anchorEl={menuAnchorEl}
+                 open={Boolean(menuAnchorEl)}
+                 onClose={() => setMenuAnchorEl(null)}
+               >
+-                <MenuItem onClick={() => openDialogFor(alternateAction)}>
++                <MenuItem {...asDiv} onClick={() => openDialogFor(alternateAction)}>
+                   {label(alternateAction)}
+                 </MenuItem>
+               </Menu>
+@@ -247,7 +245,9 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                 </Grid>
+                 {action !== 'evict' && (
+                   <Grid item sx={{ mt: 1 }}>
++                    {/* AX div soup: a div, not a wrapping <label>, so the text no longer names the checkbox. */}
+                     <FormControlLabel
++                      as="div"
+                       control={
+                         <Checkbox
+                           size="small"
+diff --git a/frontend/src/components/common/Resource/MainInfoSection/MainInfoSection.tsx b/frontend/src/components/common/Resource/MainInfoSection/MainInfoSection.tsx
+index 5052c97..245ec07 100644
+--- a/frontend/src/components/common/Resource/MainInfoSection/MainInfoSection.tsx
++++ b/frontend/src/components/common/Resource/MainInfoSection/MainInfoSection.tsx
+@@ -87,9 +87,8 @@ export function MainInfoSection<T extends KubeObject>(props: MainInfoSectionProp
+ 
+   return (
+     <>
++      {/* AX div soup: no busy state or live region. */}
+       <SectionBox
+-        aria-busy={resource === null}
+-        aria-live="polite"
+         title={
+           <MainInfoHeader
+             title={title}
+diff --git a/frontend/src/components/common/Resource/Resource.tsx b/frontend/src/components/common/Resource/Resource.tsx
+index b424416..5184e97 100644
+--- a/frontend/src/components/common/Resource/Resource.tsx
++++ b/frontend/src/components/common/Resource/Resource.tsx
+@@ -299,8 +299,9 @@ export function DetailsGrid<T extends KubeObjectClass>(props: DetailsGridProps<T
+       typeof headerSection === 'function' ? headerSection(item) : headerSection;
+     sections.push({
+       id: DefaultDetailsViewSection.METADATA,
++      // AX div soup: no busy state or live region on the metadata section.
+       section: (
+-        <SectionBox aria-busy={item === null} aria-live="polite">
++        <SectionBox>
+           {mainInfoHeader}
+           <MetadataDisplay resource={item} extraRows={extraInfo} />
+         </SectionBox>
+diff --git a/frontend/src/components/common/Resource/ScaleButton.tsx b/frontend/src/components/common/Resource/ScaleButton.tsx
+index e78e2f4..70fbc1a 100644
+--- a/frontend/src/components/common/Resource/ScaleButton.tsx
++++ b/frontend/src/components/common/Resource/ScaleButton.tsx
+@@ -41,6 +41,7 @@ import {
+ import { AppDispatch } from '../../../redux/stores/store';
+ import ActionButton, { ButtonStyle } from '../ActionButton';
+ import { LightTooltip } from '../Tooltip';
++import { asDiv, noDialogRole } from '../../../lib/ax';
+ import AuthVisible from './AuthVisible';
+ 
+ interface ScaleButtonProps {
+@@ -147,7 +148,14 @@ function ScaleDialog(props: ScaleDialogProps) {
+   const currentNumReplicas = getNumReplicas();
+ 
+   return (
+-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
++    // AX div soup: MUI ties the dialog to its DialogTitle by id; PaperProps comes last, so it unties it.
++    <Dialog
++      open={open}
++      onClose={onClose}
++      fullWidth
++      maxWidth="sm"
++      PaperProps={{ 'aria-labelledby': undefined, ...noDialogRole }}
++    >
+       <DialogTitle>{t('Scale Replicas')}</DialogTitle>
+       <DialogContent
+         sx={{
+@@ -171,10 +179,10 @@ function ScaleDialog(props: ScaleDialogProps) {
+             </Grid>
+             <Grid item spacing={2} sm="auto" sx={{ padding: '6px', textAlign: 'left' }}>
+               <Fab
++                {...asDiv}
+                 size="small"
+                 color="secondary"
+                 onClick={() => setNumReplicas(numReplicas => Math.max(0, numReplicas - 1))}
+-                aria-label={t('translation|Decrement')}
+                 disabled={numReplicas <= 0}
+                 sx={{ boxShadow: 'none' }}
+               >
+@@ -186,7 +194,6 @@ function ScaleDialog(props: ScaleDialogProps) {
+                 value={numReplicas}
+                 sx={{ marginLeft: '6px', marginRight: '6px' }}
+                 onChange={e => setNumReplicas(Math.max(0, Number(e.target.value)))}
+-                aria-labelledby={desiredNumReplicasLabel}
+                 inputProps={{
+                   min: 0,
+                   step: 1,
+@@ -194,10 +201,10 @@ function ScaleDialog(props: ScaleDialogProps) {
+               />
+ 
+               <Fab
++                {...asDiv}
+                 size="small"
+                 color="secondary"
+                 onClick={() => setNumReplicas(numReplicas => numReplicas + 1)}
+-                aria-label={t('translation|Increment')}
+                 sx={{ boxShadow: 'none' }}
+               >
+                 <Icon icon="mdi:plus" width="22px" />
+@@ -218,10 +225,11 @@ function ScaleDialog(props: ScaleDialogProps) {
+         </Grid>
+       </DialogContent>
+       <DialogActions>
+-        <Button onClick={onClose} color="secondary" variant="contained">
++        <Button {...asDiv} onClick={onClose} color="secondary" variant="contained">
+           {t('translation|Cancel')}
+         </Button>
+         <Button
++          {...asDiv}
+           onClick={() => {
+             onSave(numReplicas);
+             dispatchHeadlampEvent({
+diff --git a/frontend/src/components/common/SimpleTable.tsx b/frontend/src/components/common/SimpleTable.tsx
+index 3bd982c..01ca666 100644
+--- a/frontend/src/components/common/SimpleTable.tsx
++++ b/frontend/src/components/common/SimpleTable.tsx
+@@ -522,7 +522,8 @@ export default function SimpleTable(props: SimpleTableProps) {
+ 
+   return (
+     <>
+-      <Box role="status" aria-live="polite" aria-atomic="true" sx={visuallyHidden}>
++      {/* AX div soup: no live region. */}
++      <Box sx={visuallyHidden}>
+         {announcedStatus}
+       </Box>
+       {content}
+diff --git a/frontend/src/components/common/Table/Table.tsx b/frontend/src/components/common/Table/Table.tsx
+index e85b497..9a03e1c 100644
+--- a/frontend/src/components/common/Table/Table.tsx
++++ b/frontend/src/components/common/Table/Table.tsx
+@@ -919,7 +919,8 @@ export default function Table<RowItem extends Record<string, any>>({
+ 
+   return (
+     <Box ref={tableContainerRef} sx={{ width: '100%' }}>
+-      <Box role="status" aria-live="polite" aria-atomic="true" sx={visuallyHidden}>
++      {/* AX div soup: no live region. */}
++      <Box sx={visuallyHidden}>
+         {announcedStatus}
+       </Box>
+       {content}
+diff --git a/frontend/src/lib/ax.ts b/frontend/src/lib/ax.ts
+new file mode 100644
+index 0000000..c3c2d96
+--- /dev/null
++++ b/frontend/src/lib/ax.ts
+@@ -0,0 +1,15 @@
++/**
++ * AX div soup: spread onto a MUI ButtonBase control (Button, IconButton, Fab, MenuItem) to render
++ * it as a plain div with no role and no tab stop. The look is unchanged: ButtonBase already
++ * resets the native button's styles. `null`, not `undefined`, because MUI defaults
++ * `tabIndex` (and MenuItem's `role`) when the prop is undefined.
++ */
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export const asDiv: any = { component: 'div', role: null, tabIndex: null };
++
++/** AX div soup: spread into a Dialog's PaperProps to drop `role="dialog"`. */
++export const noDialogRole = { role: undefined };
++
++/** AX div soup: MenuListProps for a Menu with no menu or list role and no tab stop. */
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export const plainMenuList: any = { component: 'div', role: null, tabIndex: null };

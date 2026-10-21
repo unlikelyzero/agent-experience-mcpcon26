@@ -1,4 +1,4 @@
-name: levels
+name: tiers
 on:
   push:
     branches: [main]
@@ -17,7 +17,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci && npm run build
-      # Fails when a level patch no longer applies to the pin.
+      # Fails when a tier patch no longer applies to the pin.
       - run: node dist/harness/src/cli.js prepare --app ${{ matrix.app }}
       # Enable once the commands exist (docs/DESIGN.md §8):
       # - run: node dist/harness/src/cli.js eval pixels --app ${{ matrix.app }}

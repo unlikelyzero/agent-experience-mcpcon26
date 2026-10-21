@@ -2,9 +2,10 @@
 
 Companion repo for the AGNTCon + MCPCon North America 2026 talk and poster on
 **Agent Experience (AX)**. The claim it measures: **the same agent, doing the
-same task, on the same pixels, does worse as an app's accessibility degrades.**
+same task, on the same pixels, does better as an app's accessibility goes from
+div soup, to WCAG / Section 508 compliant, to full accessibility patterns.**
 
-It measures that on two open-source apps, one at a time:
+It measures that on open-source apps, one at a time:
 
 | App | What it is | Stack | Pin |
 |---|---|---|---|
@@ -19,72 +20,83 @@ runs, the poster's numbers are illustrative and marked as such.
 ```
 docs/DESIGN.md            this file; source of truth
 harness/src/
-  types.ts                AppAdapter, Level, Task, Grade, RunRecord
+  types.ts                AppAdapter, Tier, Task, Grade, RunRecord
   cli.ts                  `ax` entry point
-  prepare.ts              pinned checkout + one git worktree per level; diff; patch export
+  prepare.ts              pinned checkout + one git worktree per tier; diff; patch export
+  exec.ts                 shell and HTTP-wait helpers
   drivers.ts              how the agent reaches the browser (Playwright MCP / CLI)
   stream-metrics.ts       parses `claude -p --output-format stream-json`
 apps/<app>/
   app.ts                  the app's AppAdapter
-  levels/L<n>-<name>.patch  one plain `git diff` per level, against the level below
+  tiers/<tier>.patch      one plain `git diff` per tier, against the pin
   ...                     seed fixtures, graders, cluster config (per app)
 .work/<app>/              gitignored; `prepare` output
   src/                    the pinned clone
-  L0 … L3/                worktrees on branches ax/L0 … ax/L3
+  div-soup/ wcag/ patterns/   worktrees on branches ax/<tier>
 results/
   runs/<run-id>/          gitignored; per-run artifacts (may contain seeded credentials)
   published/              committed; the numbers the poster quotes
 ```
 
-## 2. Levels
+## 2. Tiers
 
-Each level removes one layer of machine-readable semantics **and nothing
-visible**. Levels are cumulative: L2 includes L1, L3 includes L2.
+Three tiers. Each is a patch on the app as shipped, and each changes
+**machine-readable semantics only**: markup, roles, names, states and ARIA.
+The app as shipped is the starting point for the patches, not a measured
+column.
 
-| Level | Name | Removed |
+| Tier | Id | Bar |
 |---|---|---|
-| L0 | baseline | Nothing. The app at the pin. |
-| L1 | no names | Accessible names: `aria-label`, `aria-labelledby`, `<label for>` / wrapping-label associations, `title`-derived names, `alt`. Visible text stays; it is no longer tied to its control. |
-| L2 | no roles | Native interactive elements and ARIA roles become plain `<div (click)>`s with no role or `tabindex`: buttons, menu items, tabs, checkboxes, dialog/list/landmark roles. Keyboard access goes with them, as it does in the wild. |
-| L3 | no state | State and live regions: `aria-selected`, `aria-expanded`, `aria-checked`, `aria-pressed`, `role=status` / `role=alert`. Key class names get a per-build random suffix so CSS-selector scripts written against one build break on the next. |
+| **Div soup** | `div-soup` | Everything a task touches is a `<div>`. No accessible names (`aria-label`, label associations, `title`-derived names, `alt`). No roles: buttons, menu items, tabs, checkboxes, dialogs, lists and landmarks become `<div onClick>` with no role or `tabindex`, so keyboard access goes too. No state (`aria-selected`, `aria-expanded`, `aria-checked`, `aria-pressed`, live regions). Key class names get a per-build random suffix, so CSS-selector scripts written against one build break on the next. |
+| **WCAG / Section 508** | `wcag` | Zero axe violations tagged `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` or `wcag22aa` over every `evalStates` entry. Section 508 incorporates WCAG 2.0 AA, so this bar covers it. Visual rules (`color-contrast`, `link-in-text-block`, `target-size`) are reported, not fixed: fixing them would change the pixels. This is compliance, the bar most teams ship to. |
+| **100% accessibility patterns** | `patterns` | The `wcag` bar, plus every widget the tasks touch follows its WAI-ARIA Authoring Practices (APG) pattern: roles, names, states, the keyboard model, landmarks and live regions. On top of that come **agent hints**: an `aria-describedby` description of what each action does, stable `id`s, and `data-testid` on task-relevant controls. This tier tests whether going beyond compliance helps agents. |
 
-Rules for every level patch:
+Rules for every tier patch:
 
-- **Pixel-identical.** Every `evalStates` entry screenshots byte-identical at
-  L0 and Ln (`ax eval pixels`, a CI gate). Patches swap elements and
-  attributes, and add whatever CSS is needed to make a `<div>` box like the
+- **Pixel-identical.** Every `evalStates` entry screenshots byte-identical
+  across all three tiers (`ax eval pixels`, a CI gate). Patches swap elements
+  and attributes, and add whatever CSS is needed to make a `<div>` box like the
   `<button>` it replaced; they never change the look.
-- **Plain patches.** A level is a `git diff` against the level below, applied
-  at build time. No runtime switch in the app. (The earlier what-iff work used
-  a runtime `?ax=N` service; that is recut into three patches for this repo.)
+- **Plain patches, independent.** A tier is a `git diff` against the pin,
+  applied at build time. Tiers are not cumulative: `div-soup` removes
+  semantics the shipped app has, while `wcag` and `patterns` add them. No
+  runtime switch in the app. (The earlier what-iff work used a runtime
+  `?ax=N` service; that is recut into tier patches here.)
+- **An empty patch is a result.** If the shipped app already meets the `wcag`
+  bar on the task surfaces, `wcag.patch` is empty and the report says so.
 - **Scoped.** A patch touches only the components the tasks go through, plus
-  shared components they render. List what it touches in the patch's commit
-  message in the worktree.
+  shared components they render. List what it touches in the commit message
+  in the tier's worktree.
 
 ### Headlamp catalog
 
-| Level | Where | Change | Status |
+| Tier | Where | Change | Status |
 |---|---|---|---|
-| L1 | `ActionButton` | Drop `aria-label`; pass the Tooltip `title` as an element, not a string (see Gotchas) | Done |
-| L1 | Scale dialog, `ConfirmDialog` | No dialog name or description (`PaperProps` unties MUI's title link); no names on the −/+ Fabs; replica input not labelled by its caption | Done |
-| L1 | Delete dialog's Force Delete, Namespaces filter | Wrapping `<label>` becomes a div; `InputLabel` loses `htmlFor` | Done |
-| L1 | Table toolbar, row checkboxes | Left named: material-react-table builds those names from its localization strings, which also feed the visible tooltips. No task needs them; rows are reached by their name links, whose names are visible text | Out of scope |
-| L2 | `ActionButton` (icon and menu forms), Scale dialog Fabs and buttons, `ConfirmDialog` buttons, delete split-button menu | `<div onClick>` with no role or tab stop: `asDiv` (`frontend/src/lib/ax.ts`) passes `component: 'div'` and `null` role/tabIndex to ButtonBase | Done |
-| L2 | Scale dialog, `ConfirmDialog` | Override `role="dialog"` on the Paper via `PaperProps` | Done |
-| L2 | Layout `<main>`, sidebar and top bar `<nav>` | Plain divs; no landmarks | Done |
-| L2 | Tabs, table row checkboxes, Force Delete checkbox | Not on any task path | Out of scope |
-| L3 | Tabs, expandable rows, snackbars | Drop state attrs and live regions; suffix key classes | Not started |
+| div-soup | `ActionButton` | Drop `aria-label`; pass the Tooltip `title` as an element, not a string (see Gotchas) | Done |
+| div-soup | Scale dialog, `ConfirmDialog` | No dialog name or description (`PaperProps` unties MUI's title link); no names on the −/+ Fabs; replica input not labelled by its caption | Done |
+| div-soup | Delete dialog's Force Delete, Namespaces filter | Wrapping `<label>` becomes a div; `InputLabel` loses `htmlFor` | Done |
+| div-soup | `ActionButton` (icon and menu forms), Scale dialog Fabs and buttons, `ConfirmDialog` buttons, delete split-button menu | `<div onClick>` with no role or tab stop: `asDiv` (`frontend/src/lib/ax.ts`) passes `component: 'div'` and `null` role/tabIndex to ButtonBase | Done |
+| div-soup | Scale dialog, `ConfirmDialog` | Override `role="dialog"` on the Paper via `PaperProps` | Done |
+| div-soup | Layout `<main>`, sidebar and top bar `<nav>` | Plain divs; no landmarks | Done |
+| div-soup | Snackbars, copy-button and table status regions, details sections, delete split button | No `role="alert"` (notistack hardcodes it; a ref strips it), no `role="status"`/`aria-live`/`aria-busy`, no `aria-haspopup`/`aria-expanded`/`aria-controls` | Done |
+| div-soup | Table toolbar, row checkboxes, tabs, Force Delete checkbox | Left as shipped. No task path needs them, and material-react-table builds its toolbar names from the strings that feed the visible tooltips | Out of scope |
+| div-soup | Class-name suffix | Not done: Headlamp's own classes are emotion hashes already, and suffixing MUI's would break Headlamp's `.Mui*` style overrides and so the pixels | Out of scope |
+| wcag | Task surfaces | Fix what the axe WCAG scan of shipped finds | Needs the shipped scan |
+| patterns | Task surfaces | APG audit per widget, plus agent hints | Not started |
 
 ### what-iff catalog
 
-Scope is the Memory Manager (`/memories`) and the `ui-modal` it opens, as in
-the earlier runtime work:
+Scope is the Memory Manager (`/memories`) and the `ui-modal` it opens.
 
-| Level | Change |
+| Tier | Change |
 |---|---|
-| L1 | `aria-label`s go (search, filters, "More actions", "Select memory", "Close", "Starred", …). Filter `<label>` wrappers become `<div>`s. |
-| L2 | Card ⋮ button and menu items, status tabs, bulk-bar actions, Move menu entries, Move/Delete/Cancel dialog footers become `<div (click)>`. Checkboxes become styled divs toggling a class. `ui-modal` drops `role=dialog`/`aria-modal`/`aria-labelledby`; its close button becomes a div. Cards lose `role=listitem`, the list loses `role=list`. |
-| L3 | `aria-selected`, `aria-expanded`, `role=status`, `role=alert` go. Key classes (`memory-card`, `memory-card__menu-btn`, `memory-card__menu`, `memories-shell__tab--active`, …) get a random suffix. |
+| div-soup | The earlier runtime level 3, recut as a patch. `aria-label`s go (search, filters, "More actions", "Select memory", "Close", "Starred", …), and filter `<label>` wrappers become `<div>`s. The card ⋮ button and menu items, status tabs, bulk-bar actions, Move menu entries and dialog footers become `<div (click)>`. Checkboxes become styled divs. `ui-modal` loses `role=dialog`/`aria-modal`/`aria-labelledby`. Cards and the list lose their list roles. `aria-selected`, `aria-expanded`, `role=status` and `role=alert` go. Key classes get a random suffix. |
+| wcag | Fix the WCAG-tagged axe findings on shipped. The shipped scan found `color-contrast` (visual, so reported only), plus `aria-allowed-role` and `heading-order`, which are best-practice rules rather than WCAG ones. So this patch may be empty; confirm with a tag-filtered scan. |
+| patterns | APG audit of the card menu (menu button pattern), the status tabs (tabs), the bulk "Select all" (checkbox), the Move dialog (modal dialog) and the list (listbox or grid), plus agent hints. |
+
+The earlier runtime results (memory specs passing 26/26 shipped, falling to
+5/26 at runtime level 3) were measured on the old level scale. Level 3 is
+roughly `div-soup`; re-run on the tier patches before quoting.
 
 ## 3. Adapter contract
 
@@ -93,8 +105,8 @@ One `AppAdapter` per app (`apps/<app>/app.ts`, type in `harness/src/types.ts`):
 | Member | Purpose |
 |---|---|
 | `name`, `repo`, `sha` | What `prepare` checks out |
-| `build(level, dir)` | Build the level's worktree into something servable |
-| `serve(level, dir)` | Start it; returns `{ url, stop() }` |
+| `build(tier, dir)` | Build the tier's worktree into something servable |
+| `serve(tier, dir)` | Start it; returns `{ url, stop() }` |
 | `seed()` | Put the app in the known starting state for one run; returns what graders need |
 | `tasks` | The task list (§4) |
 | `evalStates` | Named UI states (`{ name, path, setup? }`) for the pixel, axe and roles evals |
@@ -133,7 +145,7 @@ the target, in prod or staging, fails the run.
 | H4 | Delete the ConfigMap `feature-flags-old` in `shop-prod`, keep `feature-flags` | old gone, new present, staging both present |
 | H5 | Report the image tag `payments` runs in `shop-prod` | final answer names the prod tag, not staging's; cluster unchanged |
 
-Each was done by hand in the L0 UI, passed, and failed when done on the
+Each was done by hand in the shipped UI, passed, and failed when done on the
 staging copy instead. UI paths: H1 Scale icon → dialog; H2 pod's "More delete
 options" → Delete (the trash icon on a pod is Evict); H3 the CronJob's Suspend
 button; H4 trash icon → confirm; H5 the deployment's Containers section.
@@ -159,10 +171,12 @@ pinned personality, archived, starred).
 | `playwright-cli` | `@playwright/cli@0.1.22` | Bash restricted to `playwright-cli` |
 
 Agent invocation: `claude -p <prompt> --output-format stream-json --verbose
---no-chrome --disable-slash-commands --permission-mode dontAsk
---no-session-persistence` plus the driver's args. `ax run` takes
-`--max-budget-usd`. Both drivers see the page mainly as Playwright's
-accessibility snapshot, which is exactly what the levels strip.
+--no-chrome --disable-slash-commands --setting-sources '' --permission-mode
+dontAsk --no-session-persistence` plus the driver's args, run in an empty
+temp directory. `--setting-sources ''` and the temp directory keep the
+operator's hooks, plugins and CLAUDE.md files out of the agent's context.
+`ax run` takes `--max-budget-usd`. Both drivers see the page mainly as
+Playwright's accessibility snapshot, which is exactly what the tiers change.
 
 ## 6. Metrics
 
@@ -177,51 +191,59 @@ Per run, one `RunRecord` (one CSV row):
 | `wall_ms`, `turns`, `exit_code`, `timed_out` | Process facts |
 | `fail_reasons` | Grader reasons |
 
-Per level (`ax report`): success rate; mean tool calls and screenshots;
-**tokens and $ per successful task** (all spend at that level divided by
-passes); false "done" count; **axe violations** over `evalStates`; **roles
-pass rate** (the app's own role/label-based specs, unmodified).
+Per tier (`ax report`): success rate; mean tool calls and screenshots;
+**tokens and $ per successful task** (all spend at that tier divided by
+passes); false "done" count; **axe violations** over `evalStates`, split into
+WCAG-tagged, visual and best-practice; **roles pass rate** (the app's own
+role/label-based specs, unmodified).
 
-axe is reported, never gated: at L2 axe finds fewer violations than at L1
-because `<div>`s give it nothing to flag. axe alone understates the damage;
-that is a talk point.
+axe is reported, never gated, except as the definition of the `wcag` tier. Div
+soup can show fewer axe violations than a half-labelled app, because `<div>`s
+give axe nothing to flag. axe alone understates the damage; that is a talk
+point. The `patterns` tier versus the `wcag` tier is the other talk point:
+whether compliance is enough for agents.
 
 ## 7. CLI
 
 | Command | Does |
 |---|---|
-| `ax prepare --app <a> [--force]` | Clone the pin, make `L0–L3` worktrees, apply patches cumulatively; stops with a warning at the first missing patch |
-| `ax diff --app <a> <from> <to> [--file <name>]` | Diff two levels' worktrees |
-| `ax patches export --app <a>` | Write `apps/<a>/levels/L<n>-<name>.patch` from the committed `ax/L<n-1>..ax/L<n>` diff |
-| `ax serve --app <a> --level <n>` | Build and serve one level |
+| `ax prepare --app <a> [--force]` | Clone the pin and make one worktree per tier, each with its patch applied. A tier with no patch yet is left as an unpatched copy, ready to edit |
+| `ax diff --app <a> <from> <to> [--file <name>]` | Diff two tiers, or `shipped` against a tier |
+| `ax patches export --app <a>` | Write `apps/<a>/tiers/<tier>.patch` from each tier's committed diff against the pin |
+| `ax serve --app <a> --tier <t>` | Build and serve one tier |
 | `ax seed --app <a>` | Reset to the starting state; saves the seed to `.work/<a>/seed.json` |
 | `ax grade --app <a> --task <id> [--text <answer>]` | Grade the cluster against the last seed, for checking a task by hand |
-| `ax eval pixels --app <a> [--levels 1,2,3]` | Pixel gate: each `evalStates` entry at L0 vs Ln, byte for byte; exits 1 on any difference and writes the pairs to `results/runs/pixels-<time>/` |
+| `ax eval pixels --app <a> [--tiers a,b,…]` | Pixel gate: each `evalStates` entry in every tier vs the first, byte for byte (default: every prepared tier; an unpatched tier is the app as shipped); exits 1 on any difference and writes the pairs to `results/runs/pixels-<time>/` |
 | `ax eval axe\|roles --app <a>` | axe and roles reports |
-| `ax run --app <a> [--levels] [--drivers] [--tasks] [--runs] [--max-budget-usd]` | The agent matrix. Interleaves levels so drift spreads evenly |
-| `ax report --app <a>` | Per-level tables as Markdown and JSON |
+| `ax run --app <a> [--tiers] [--drivers] [--tasks] [--runs] [--max-budget-usd]` | The agent matrix. Interleaves tiers so drift spreads evenly |
+| `ax report --app <a>` | Per-tier tables as Markdown and JSON |
 
-Patch workflow: edit and **commit** in `.work/<a>/L<n>`, `ax patches export`,
-then `ax prepare --force` so higher levels are rebuilt on the new patch.
+Patch workflow: edit and **commit** in `.work/<a>/<tier>`, then run
+`ax patches export`. Tiers are independent, so editing one never invalidates
+another.
 
 ## 8. Build order
 
 1. `ax serve` for Headlamp (done): the image build from `npm run image:build`
-   tagged `headlamp-ax:L<n>`, run as container `headlamp-ax-L<n>` on kind's
+   tagged `headlamp-ax:<tier>`, run as container `headlamp-ax-<tier>` on kind's
    docker network with `kind get kubeconfig --internal`, published on
-   `localhost:4466+n`. Ctrl-C removes the container.
-2. Headlamp seed and graders at L0 (done): `kind create cluster --config
-   apps/headlamp/cluster/kind.yaml`, `ax seed`, each task by hand, `ax grade`
-   passes, and fails on the staging distractor.
+   `localhost:4466` (div-soup), `4467` (wcag) and `4468` (patterns). Ctrl-C
+   removes the container.
+2. Headlamp seed and graders (done): `kind create cluster --config
+   apps/headlamp/cluster/kind.yaml`, `ax seed`, each task by hand on the
+   shipped app, `ax grade` passes, and fails on the staging distractor.
 3. `ax eval pixels` (done). Headless Chromium from the pinned `playwright`,
    1280×800, UTC, clock frozen so relative ages match. A state is shot when two
    frames 500 ms apart are identical; a differing pair is reshot once, since
    live data (a restart count) can tick between shots. Not in CI yet: it needs
    the kind cluster and Docker builds.
-4. Headlamp L1–L3 patches, each passing the pixel gate.
-5. `ax eval axe`, `ax eval roles`, then `ax run` and `ax report`.
-6. what-iff: port seed and graders, recut the runtime degradations into three
-   patches.
+4. `ax eval axe` with WCAG tag filtering. It defines when the `wcag` tier is
+   done.
+5. Headlamp tier patches, each passing the pixel gate: `div-soup` (done for
+   the task paths), `wcag` (axe-clean), `patterns` (APG audit plus hints).
+6. `ax eval roles`, then `ax run` and `ax report`.
+7. what-iff: port seed and graders, recut runtime level 3 as `div-soup`, write
+   `wcag` and `patterns`.
 
 ## 9. Gotchas
 
@@ -231,11 +253,12 @@ then `ax prepare --force` so higher levels are rebuilt on the new patch.
   override with `PaperProps`.
 - **A div opener rings the dialog.** Clicking a native button tells Chromium
   focus came from the mouse; clicking a div does not, so the dialog's
-  programmatic focus then matches `:focus-visible` and draws an outline L0
-  never shows. L2 suppresses that outline on `ConfirmDialog`'s content.
+  programmatic focus then matches `:focus-visible` and draws an outline the
+  shipped app never shows. div-soup suppresses that outline on
+  `ConfirmDialog`'s content.
 - **MUI defaults `undefined`.** ButtonBase's `tabIndex` and MenuItem's `role`
   fall back to their defaults when passed `undefined`; pass `null`.
-- **Headlamp's classes are already hashed** (emotion `css-…`) at L0, so L3's
+- **Headlamp's classes are already hashed** (emotion `css-…`), so div soup's
   class suffixing matters less there than in what-iff.
 - **Headlamp delays its writes.** Scale, delete and suspend show an undo
   snackbar and reach the API server a few seconds later. Grade after that
@@ -245,7 +268,7 @@ then `ax prepare --force` so higher levels are rebuilt on the new patch.
 - **`prepare` needs network** to fetch the pinned commit.
 - **Headlamp's `image:build` passes `--platform=local`**, which is darwin on a
   Mac and matches no base image. `ax serve` omits it.
-- **Headlamp shows `HEADLAMP_SOURCE_COMMIT` in the UI.** Every level's image is
-  built with the pin's SHA, not the level's commit, so the pixels match.
+- **Headlamp shows `HEADLAMP_SOURCE_COMMIT` in the UI.** Every tier's image is
+  built with the pin's SHA, not the tier's commit, so the pixels match.
 - **what-iff's `make check-public-hygiene`** rejects AI attribution in commits.
   That applies only to patches meant for the what-iff repo.

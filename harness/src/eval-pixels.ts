@@ -1,12 +1,13 @@
 /**
- * `ax eval pixels`: every `evalStates` entry must screenshot byte-identical at L0 and Ln
- * (docs/DESIGN.md §2). Differing pairs are written to results/runs/pixels-<time>/.
+ * `ax eval pixels`: every `evalStates` entry must screenshot byte-identical in every tier
+ * (docs/DESIGN.md §2). Each tier is compared with the first one given; an unpatched tier
+ * is the app as shipped. Differing pairs are written to results/runs/pixels-<time>/.
  */
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, type Browser } from 'playwright';
-import { ROOT, levelDir } from './prepare.js';
-import type { AppAdapter, EvalState, Level, Served } from './types.js';
+import { ROOT, tierDir } from './prepare.js';
+import type { AppAdapter, EvalState, Served, Tier } from './types.js';
 
 /** The same moment at both levels, so relative times ("5m ago") render the same. */
 const NOW = new Date();
@@ -41,24 +42,26 @@ async function shot(browser: Browser, url: string, state: EvalState): Promise<Bu
   }
 }
 
-async function serveLevel(app: AppAdapter, level: Level): Promise<Served> {
-  const dir = levelDir(app, level);
+async function serveTier(app: AppAdapter, tier: Tier): Promise<Served> {
+  const dir = tierDir(app, tier);
   if (!existsSync(dir)) throw new Error(`no ${dir}; run ax prepare --app ${app.name}`);
-  await app.build(level, dir);
-  return app.serve(level, dir);
+  await app.build(tier, dir);
+  return app.serve(tier, dir);
 }
 
 /** Returns false when any state differs. */
-export async function evalPixels(app: AppAdapter, levels: Level[]): Promise<boolean> {
+export async function evalPixels(app: AppAdapter, tiers: Tier[]): Promise<boolean> {
   if (!app.evalStates.length) throw new Error(`${app.name} has no evalStates`);
+  const [first, ...others] = tiers;
+  if (!first || !others.length) throw new Error('eval pixels needs at least two tiers to compare');
   const out = join(ROOT, 'results', 'runs', `pixels-${NOW.toISOString().replace(/[:.]/g, '-')}`);
   await app.seed();
   const browser = await chromium.launch({ args: DETERMINISTIC });
-  const base = await serveLevel(app, 0);
+  const base = await serveTier(app, first);
   let ok = true;
   try {
-    for (const level of levels) {
-      const served = await serveLevel(app, level);
+    for (const tier of others) {
+      const served = await serveTier(app, tier);
       try {
         for (const state of app.evalStates) {
           // Shoot the pair back to back and retry once: live data (a restart count) can tick
@@ -70,12 +73,12 @@ export async function evalPixels(app: AppAdapter, levels: Level[]): Promise<bool
             b = await shot(browser, served.url, state);
             same = a.equals(b);
           }
-          console.log(`${same ? 'same' : 'DIFF'}  L0 vs L${level}  ${state.name}`);
+          console.log(`${same ? 'same' : 'DIFF'}  ${first} vs ${tier}  ${state.name}`);
           if (!same) {
             ok = false;
             mkdirSync(out, { recursive: true });
-            writeFileSync(join(out, `${state.name}-L0.png`), a);
-            writeFileSync(join(out, `${state.name}-L${level}.png`), b);
+            writeFileSync(join(out, `${state.name}-${first}.png`), a);
+            writeFileSync(join(out, `${state.name}-${tier}.png`), b);
           }
         }
       } finally {
