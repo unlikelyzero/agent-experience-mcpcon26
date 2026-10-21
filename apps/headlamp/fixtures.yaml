@@ -1,0 +1,101 @@
+# The Headlamp task fixtures (docs/DESIGN.md §4). `seed()` deletes both namespaces and
+# applies this file. shop-staging is shop-prod with different image tags: the distractor.
+# Everything carries `ax: fixture`, which is how the graders find it.
+# The `NS` and `*_TAG` placeholders are filled per namespace by seed() in app.ts.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: NS
+  labels: { ax: fixture }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: NS
+  labels: { ax: fixture, app: checkout }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: checkout } }
+  template:
+    metadata:
+      labels: { ax: fixture, app: checkout }
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: checkout
+          image: busybox:CHECKOUT_TAG
+          command: [sleep, infinity]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments
+  namespace: NS
+  labels: { ax: fixture, app: payments }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: payments } }
+  template:
+    metadata:
+      labels: { ax: fixture, app: payments }
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: payments
+          image: busybox:PAYMENTS_TAG
+          command: [sleep, infinity]
+---
+# A bare pod, so deleting it removes it for good.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cart
+  namespace: NS
+  labels: { ax: fixture, app: cart }
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+    - name: cart
+      image: busybox:CHECKOUT_TAG
+      command: [sh, -c, 'echo "cart: cannot connect to redis:6379"; exit 1']
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nightly-report
+  namespace: NS
+  labels: { ax: fixture, app: nightly-report }
+spec:
+  schedule: "0 2 * * *"
+  suspend: false
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels: { app: nightly-report }
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: report
+              image: busybox:PAYMENTS_TAG
+              command: [echo, report]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feature-flags
+  namespace: NS
+  labels: { ax: fixture }
+data:
+  new-checkout: "true"
+  express-pay: "false"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feature-flags-old
+  namespace: NS
+  labels: { ax: fixture }
+data:
+  new-checkout: "false"
