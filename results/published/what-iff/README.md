@@ -27,7 +27,8 @@ graded from app state through the API, not from the agent's claim. Costs are lis
 | claude-haiku-5-5 | wcag | 12/12 | 20.3 | 0.0 | 511k | $0.013 | 0 |
 | claude-haiku-5-5 | patterns | 12/12 | 23.8 | 0.4 | 626k | $0.015 | 0 |
 
-Regenerate with `node apps/what-iff/summarize.mjs`. Every run is a row in [`runs.csv`](runs.csv).
+Regenerate with `node apps/what-iff/summarize.mjs`. Every run is a row in [`runs.csv`](runs.csv), built
+from the runner's CSVs by `apps/what-iff/export-runs.mjs`, which also reprices Haiku 5.5.
 
 ## Evals teams already run
 
