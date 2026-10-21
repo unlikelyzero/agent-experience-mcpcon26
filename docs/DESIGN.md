@@ -109,8 +109,17 @@ separately.
 
 ### Headlamp (kind cluster, `apps/headlamp/fixtures.yaml`)
 
-Two namespaces with the same workloads, `shop-prod` and `shop-staging`.
-Staging is the distractor for every task.
+Two namespaces with the same workloads, `shop-prod` and `shop-staging`:
+deployments `checkout` and `payments`, a bare `cart` pod that crash-loops, a
+`nightly-report` CronJob, and ConfigMaps `feature-flags` and
+`feature-flags-old`. Images are `busybox` with different tags per namespace
+(prod `payments` is `1.36.1`, staging's is `1.35.0`). Staging is the distractor
+for every task.
+
+`seed()` deletes and re-applies both namespaces and snapshots everything
+labelled `ax=fixture`. A grader applies its one expected change to the snapshot
+and passes only if the live cluster matches it exactly, so any change outside
+the target, in prod or staging, fails the run.
 
 | Task | Prompt (abridged) | Grader passes when |
 |---|---|---|
@@ -120,8 +129,10 @@ Staging is the distractor for every task.
 | H4 | Delete the ConfigMap `feature-flags-old` in `shop-prod`, keep `feature-flags` | old gone, new present, staging both present |
 | H5 | Report the image tag `payments` runs in `shop-prod` | final answer names the prod tag, not staging's; cluster unchanged |
 
-These are drafts until step 2 of the build order confirms each one by hand in
-the UI.
+Each was done by hand in the L0 UI, passed, and failed when done on the
+staging copy instead. UI paths: H1 Scale icon → dialog; H2 pod's "More delete
+options" → Delete (the trash icon on a pod is Evict); H3 the CronJob's Suspend
+button; H4 trash icon → confirm; H5 the deployment's Containers section.
 
 ### what-iff (seeded account: 3 personalities, 4 threads, 40 memories)
 
@@ -179,7 +190,10 @@ that is a talk point.
 | `ax diff --app <a> <from> <to> [--file <name>]` | Diff two levels' worktrees |
 | `ax patches export --app <a>` | Write `apps/<a>/levels/L<n>-<name>.patch` from the committed `ax/L<n-1>..ax/L<n>` diff |
 | `ax serve --app <a> --level <n>` | Build and serve one level |
-| `ax eval pixels\|axe\|roles --app <a>` | Pixel gate; axe and roles reports |
+| `ax seed --app <a>` | Reset to the starting state; saves the seed to `.work/<a>/seed.json` |
+| `ax grade --app <a> --task <id> [--text <answer>]` | Grade the cluster against the last seed, for checking a task by hand |
+| `ax eval pixels --app <a> [--levels 1,2,3]` | Pixel gate: each `evalStates` entry at L0 vs Ln, byte for byte; exits 1 on any difference and writes the pairs to `results/runs/pixels-<time>/` |
+| `ax eval axe\|roles --app <a>` | axe and roles reports |
 | `ax run --app <a> [--levels] [--drivers] [--tasks] [--runs] [--max-budget-usd]` | The agent matrix. Interleaves levels so drift spreads evenly |
 | `ax report --app <a>` | Per-level tables as Markdown and JSON |
 
@@ -192,10 +206,14 @@ then `ax prepare --force` so higher levels are rebuilt on the new patch.
    tagged `headlamp-ax:L<n>`, run as container `headlamp-ax-L<n>` on kind's
    docker network with `kind get kubeconfig --internal`, published on
    `localhost:4466+n`. Ctrl-C removes the container.
-2. Headlamp seed and graders at L0: `kind create cluster --config
-   apps/headlamp/cluster/kind.yaml`, `adapter.seed()`, do each task by hand,
-   confirm each grader passes, and fails on the staging distractor.
-3. `ax eval pixels`, as a CI gate.
+2. Headlamp seed and graders at L0 (done): `kind create cluster --config
+   apps/headlamp/cluster/kind.yaml`, `ax seed`, each task by hand, `ax grade`
+   passes, and fails on the staging distractor.
+3. `ax eval pixels` (done). Headless Chromium from the pinned `playwright`,
+   1280×800, UTC, clock frozen so relative ages match. A state is shot when two
+   frames 500 ms apart are identical; a differing pair is reshot once, since
+   live data (a restart count) can tick between shots. Not in CI yet: it needs
+   the kind cluster and Docker builds.
 4. Headlamp L1–L3 patches, each passing the pixel gate.
 5. `ax eval axe`, `ax eval roles`, then `ax run` and `ax report`.
 6. what-iff: port seed and graders, recut the runtime degradations into three
@@ -209,6 +227,11 @@ then `ax prepare --force` so higher levels are rebuilt on the new patch.
   override with `PaperProps`.
 - **Headlamp's classes are already hashed** (emotion `css-…`) at L0, so L3's
   class suffixing matters less there than in what-iff.
+- **Headlamp delays its writes.** Scale, delete and suspend show an undo
+  snackbar and reach the API server a few seconds later. Grade after that
+  window, not the instant the agent clicks.
+- **A pod's trash icon is Evict**, not Delete; Delete is under "More delete
+  options".
 - **`prepare` needs network** to fetch the pinned commit.
 - **Headlamp's `image:build` passes `--platform=local`**, which is darwin on a
   Mac and matches no base image. `ax serve` omits it.
