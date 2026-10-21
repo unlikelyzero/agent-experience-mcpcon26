@@ -1,9 +1,8 @@
 /** The adapter contract every app implements. See docs/DESIGN.md §3. */
 
-export type Level = 0 | 1 | 2 | 3;
-export const LEVELS: readonly Level[] = [0, 1, 2, 3];
-/** Patch file names are `L<n>-<name>.patch`. */
-export const LEVEL_NAMES = ['baseline', 'no-names', 'no-roles', 'no-state'] as const;
+/** See docs/DESIGN.md §2. Each tier is an independent patch on the pin: `tiers/<tier>.patch`. */
+export const TIERS = ['div-soup', 'wcag', 'patterns'] as const;
+export type Tier = (typeof TIERS)[number];
 
 export interface Grade {
   pass: boolean;
@@ -39,8 +38,8 @@ export interface AppAdapter<Seed = unknown> {
   repo: string;
   /** Pinned commit. */
   sha: string;
-  build(level: Level, dir: string): Promise<void>;
-  serve(level: Level, dir: string): Promise<Served>;
+  build(tier: Tier, dir: string): Promise<void>;
+  serve(tier: Tier, dir: string): Promise<Served>;
   seed(): Promise<Seed>;
   tasks: Task<Seed>[];
   evalStates: EvalState[];
@@ -50,7 +49,7 @@ export interface AppAdapter<Seed = unknown> {
 export interface RunRecord {
   timestamp: string;
   app: string;
-  level: Level;
+  tier: Tier;
   driver: string;
   task: string;
   run: number;

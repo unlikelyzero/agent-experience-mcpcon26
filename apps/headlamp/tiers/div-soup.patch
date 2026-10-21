@@ -1,5 +1,5 @@
 diff --git a/frontend/src/components/common/ActionButton/ActionButton.tsx b/frontend/src/components/common/ActionButton/ActionButton.tsx
-index 35f64e9..b7e6291 100644
+index 35f64e9..e89993e 100644
 --- a/frontend/src/components/common/ActionButton/ActionButton.tsx
 +++ b/frontend/src/components/common/ActionButton/ActionButton.tsx
 @@ -94,25 +94,19 @@ export default function ActionButton({
@@ -7,7 +7,7 @@ index 35f64e9..b7e6291 100644
      );
    }
 -  const buttonLabel = iconButtonProps?.['aria-label'] ?? description;
-+  // AX L1: no accessible name. A string Tooltip title would be copied into aria-label,
++  // AX div soup: no accessible name. A string Tooltip title would be copied into aria-label,
 +  // so the title is passed as an element, and any caller-supplied aria-label is dropped.
    const button = (
 -    <IconButton
