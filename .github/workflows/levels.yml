@@ -1,0 +1,24 @@
+name: levels
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [headlamp, what-iff]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci && npm run build
+      # Fails when a level patch no longer applies to the pin.
+      - run: node dist/harness/src/cli.js prepare --app ${{ matrix.app }}
+      # Enable once the commands exist (docs/DESIGN.md §8):
+      # - run: node dist/harness/src/cli.js eval pixels --app ${{ matrix.app }}
+      # - run: node dist/harness/src/cli.js eval axe --app ${{ matrix.app }}

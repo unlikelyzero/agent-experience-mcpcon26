@@ -1,0 +1,34 @@
+diff --git a/frontend/src/components/common/ActionButton/ActionButton.tsx b/frontend/src/components/common/ActionButton/ActionButton.tsx
+index 35f64e9..b7e6291 100644
+--- a/frontend/src/components/common/ActionButton/ActionButton.tsx
++++ b/frontend/src/components/common/ActionButton/ActionButton.tsx
+@@ -94,25 +94,19 @@ export default function ActionButton({
+       </MenuItem>
+     );
+   }
+-  const buttonLabel = iconButtonProps?.['aria-label'] ?? description;
++  // AX L1: no accessible name. A string Tooltip title would be copied into aria-label,
++  // so the title is passed as an element, and any caller-supplied aria-label is dropped.
+   const button = (
+-    <IconButton
+-      aria-label={buttonLabel}
+-      onClick={onClick}
+-      edge={edge}
+-      size="medium"
+-      {...iconButtonProps}
+-    >
++    <IconButton onClick={onClick} edge={edge} size="medium" {...iconButtonProps} aria-label={undefined}>
+       <Icon icon={icon} color={color} width={width} {...iconProps} />
+     </IconButton>
+   );
+ 
+   return (
+-    <Tooltip title={longDescription || description}>
++    <Tooltip title={<>{longDescription || description}</>}>
+       {isDisabled ? (
+         <span
+           role="button"
+-          aria-label={buttonLabel}
+           aria-disabled="true"
+           tabIndex={0}
+           onClick={preventDisabledActivation}
