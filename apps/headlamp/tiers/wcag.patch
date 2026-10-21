@@ -1,0 +1,18 @@
+diff --git a/frontend/src/components/common/Resource/ScaleButton.tsx b/frontend/src/components/common/Resource/ScaleButton.tsx
+index e78e2f4..8afad07 100644
+--- a/frontend/src/components/common/Resource/ScaleButton.tsx
++++ b/frontend/src/components/common/Resource/ScaleButton.tsx
+@@ -186,10 +186,12 @@ function ScaleDialog(props: ScaleDialogProps) {
+                 value={numReplicas}
+                 sx={{ marginLeft: '6px', marginRight: '6px' }}
+                 onChange={e => setNumReplicas(Math.max(0, Number(e.target.value)))}
+-                aria-labelledby={desiredNumReplicasLabel}
+                 inputProps={{
+                   min: 0,
+                   step: 1,
++                  // AX wcag: on the <input> itself; on Input it lands on the wrapper div and the
++                  // field has no label (axe `label`, WCAG 4.1.2).
++                  'aria-labelledby': desiredNumReplicasLabel,
+                 }}
+               />
+ 
