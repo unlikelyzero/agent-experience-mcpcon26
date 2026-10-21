@@ -90,17 +90,19 @@ Rules for every tier patch:
 
 ### what-iff catalog
 
-Scope is the Memory Manager (`/memories`) and the `ui-modal` it opens.
+Scope is the Memory Manager (`/memories`) and the `ui-modal` it opens. The
+tiers currently live as levels of a runtime `?ax=N` switch on the
+[`ax-tiers`](https://github.com/neupenguin/what-iff/tree/ax-tiers) branch of a
+what-iff fork, together with its seed, graders and agent runner. Recutting
+them as `tiers/*.patch` is step 7 of the build order.
 
-| Tier | Change |
-|---|---|
-| div-soup | The earlier runtime level 3, recut as a patch. `aria-label`s go (search, filters, "More actions", "Select memory", "Close", "Starred", …), and filter `<label>` wrappers become `<div>`s. The card ⋮ button and menu items, status tabs, bulk-bar actions, Move menu entries and dialog footers become `<div (click)>`. Checkboxes become styled divs. `ui-modal` loses `role=dialog`/`aria-modal`/`aria-labelledby`. Cards and the list lose their list roles. `aria-selected`, `aria-expanded`, `role=status` and `role=alert` go. Key classes get a random suffix. |
-| wcag | Fix the WCAG-tagged axe findings on shipped. The shipped scan found `color-contrast` (visual, so reported only), plus `aria-allowed-role` and `heading-order`, which are best-practice rules rather than WCAG ones. So this patch may be empty; confirm with a tag-filtered scan. |
-| patterns | APG audit of the card menu (menu button pattern), the status tabs (tabs), the bulk "Select all" (checkbox), the Move dialog (modal dialog) and the list (listbox or grid), plus agent hints. |
+| Tier | Level | Change |
+|---|---|---|
+| div-soup | `?ax=3` | `aria-label`s go (search, filters, "More actions", "Select memory", "Close", "Starred", …), and filter `<label>` wrappers become `<div>`s. The card ⋮ button and menu items, status tabs, bulk-bar actions, Move menu entries and dialog footers become `<div (click)>`. Checkboxes become styled divs. `ui-modal` loses `role=dialog`/`aria-modal`/`aria-labelledby`. Cards and the list lose their list roles. `aria-selected`, `aria-expanded`, `role=status` and `role=alert` go. Key classes get a random suffix. |
+| wcag | `?ax=0` | The app as shipped. Its only axe findings on these screens are `color-contrast` (visual, reported only) and the best-practice rules `aria-allowed-role` and `heading-order`, so it already has zero WCAG-tagged violations and the patch is empty. |
+| patterns | `?ax=4` | Shipped semantics plus agent hints: repeated per-card controls (checkbox, ⋮ button, menu) are named after the memory they act on, the card's name carries its thread and archived/starred state, the menu button gets `aria-haspopup`/`aria-controls`, the editor textarea is named, bulk actions and Move targets get `aria-description`s, and task controls get `data-testid`s. |
 
-The earlier runtime results (memory specs passing 26/26 shipped, falling to
-5/26 at runtime level 3) were measured on the old level scale. Level 3 is
-roughly `div-soup`; re-run on the tier patches before quoting.
+Results: [`results/published/what-iff`](../results/published/what-iff/README.md).
 
 ## 3. Adapter contract
 
@@ -249,8 +251,10 @@ another.
    the task paths), `wcag` (done, axe-clean), `patterns` (done for the task
    paths: APG dialog patterns plus hints). All three pixel-identical.
 6. `ax eval roles`, then `ax run` and `ax report`.
-7. what-iff: port seed and graders, recut runtime level 3 as `div-soup`, write
-   `wcag` and `patterns`.
+7. what-iff: tiers, seed, graders and agent runs done on the fork's `ax-tiers`
+   branch, and results published. Still to do: port the seed and graders into
+   `apps/what-iff`, and recut levels 3 and 4 as `tiers/div-soup.patch` and
+   `tiers/patterns.patch`.
 
 ## 9. Gotchas
 

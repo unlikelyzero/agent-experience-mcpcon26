@@ -1,7 +1,11 @@
 import type { AppAdapter } from '../../harness/src/types.js';
 
+// The tiers, seed, graders and agent runner live on the ax-tiers branch of a what-iff fork
+// (https://github.com/neupenguin/what-iff/tree/ax-tiers) until they are ported here; see
+// docs/DESIGN.md, what-iff catalog.
+
 const notYet = (what: string) => async (): Promise<never> => {
-  throw new Error(`what-iff: ${what} not ported yet (docs/DESIGN.md §8, step 6)`);
+  throw new Error(`what-iff: ${what} not ported yet (docs/DESIGN.md §8, step 7)`);
 };
 
 export const whatIff: AppAdapter = {
