@@ -25,7 +25,7 @@ const C = `/c/kind-${CLUSTER}`;
 /** Leading `d` of the mdi icons on the Scale and Delete action buttons. */
 const SCALE_ICON = 'M18 8H8v10H6V8a2 2 0 0 1 2-2h10z';
 const DELETE_ICON = 'M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6';
-const icon = (d: string) => `main svg:has(path[d^="${d}"])`;
+const icon = (d: string) => `svg:has(path[d^="${d}"])`;
 
 const kubectl = (args: string[], input?: string) => sh('kubectl', ['--context', `kind-${CLUSTER}`, ...args], { input });
 
