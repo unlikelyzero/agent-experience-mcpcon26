@@ -1,0 +1,142 @@
+diff --git a/frontend/src/components/App/AppContainer.tsx b/frontend/src/components/App/AppContainer.tsx
+index d5a9391..b5b84ee 100644
+--- a/frontend/src/components/App/AppContainer.tsx
++++ b/frontend/src/components/App/AppContainer.tsx
+@@ -15,7 +15,7 @@
+  */
+ 
+ import GlobalStyles from '@mui/material/GlobalStyles';
+-import { SnackbarProvider } from 'notistack';
++import { MaterialDesignContent, SnackbarProvider } from 'notistack';
+ import React, { useEffect } from 'react';
+ import { BrowserRouter, HashRouter, useHistory, useLocation } from 'react-router-dom';
+ import { DesktopBackendApi, initializeDesktopBackend } from '../../helpers/backendTokenFetch';
+@@ -28,6 +28,31 @@ import { uiSlice } from '../../redux/uiSlice';
+ import ReleaseNotes from '../common/ReleaseNotes/ReleaseNotes';
+ import { MonacoEditorLoaderInitializer } from '../monaco/MonacoEditorLoaderInitializer';
+ import Layout from './Layout';
++
++/**
++ * AX L3: notistack's content hardcodes role="alert", so strip it (and the description link)
++ * from the rendered node. React leaves the attributes alone afterwards: its props never change.
++ */
++const SilentSnackbar = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof MaterialDesignContent>>(
++  (props, ref) => (
++    <MaterialDesignContent
++      {...props}
++      ref={node => {
++        node?.removeAttribute('role');
++        node?.removeAttribute('aria-describedby');
++        if (typeof ref === 'function') ref(node);
++        else if (ref) ref.current = node;
++      }}
++    />
++  )
++);
++const silentSnackbars = {
++  default: SilentSnackbar,
++  success: SilentSnackbar,
++  error: SilentSnackbar,
++  warning: SilentSnackbar,
++  info: SilentSnackbar,
++};
+ import { PreviousRouteProvider } from './RouteSwitcher';
+ 
+ // Listen for the open-about-dialog event from the Electron app menu
+@@ -188,6 +213,7 @@ export default function AppContainer() {
+ 
+   return (
+     <SnackbarProvider
++      Components={silentSnackbars}
+       anchorOrigin={{
+         vertical: 'bottom',
+         horizontal: 'left',
+diff --git a/frontend/src/components/common/Resource/CopyButton.tsx b/frontend/src/components/common/Resource/CopyButton.tsx
+index 9b162c6..8fd7176 100644
+--- a/frontend/src/components/common/Resource/CopyButton.tsx
++++ b/frontend/src/components/common/Resource/CopyButton.tsx
+@@ -70,7 +70,8 @@ export default function CopyButton(props: CopyButtonProps) {
+         iconButtonProps={iconButtonProps}
+         width={width}
+       />
+-      <Box role="status" aria-live="polite" aria-atomic="true" sx={visuallyHidden}>
++      {/* AX L3: no live region; the text is still there, just never announced. */}
++      <Box sx={visuallyHidden}>
+         {copied ? t('translation|Copied!') : ''}
+       </Box>
+     </>
+diff --git a/frontend/src/components/common/Resource/DeleteButton.tsx b/frontend/src/components/common/Resource/DeleteButton.tsx
+index 17c5f1e..9df91a1 100644
+--- a/frontend/src/components/common/Resource/DeleteButton.tsx
++++ b/frontend/src/components/common/Resource/DeleteButton.tsx
+@@ -206,11 +206,7 @@ export default function DeleteButton(props: DeleteButtonProps) {
+                   setMenuAnchorEl(event.currentTarget)
+                 }
+                 icon="mdi:menu-down"
+-                iconButtonProps={{
+-                  'aria-haspopup': 'true',
+-                  'aria-expanded': Boolean(menuAnchorEl),
+-                  'aria-controls': Boolean(menuAnchorEl) ? menuId : undefined,
+-                }}
++                // AX L3: no popup, expanded or controls state.
+               />
+               <Menu
+                 MenuListProps={plainMenuList}
+diff --git a/frontend/src/components/common/Resource/MainInfoSection/MainInfoSection.tsx b/frontend/src/components/common/Resource/MainInfoSection/MainInfoSection.tsx
+index 5052c97..a6054cf 100644
+--- a/frontend/src/components/common/Resource/MainInfoSection/MainInfoSection.tsx
++++ b/frontend/src/components/common/Resource/MainInfoSection/MainInfoSection.tsx
+@@ -87,9 +87,8 @@ export function MainInfoSection<T extends KubeObject>(props: MainInfoSectionProp
+ 
+   return (
+     <>
++      {/* AX L3: no busy state or live region. */}
+       <SectionBox
+-        aria-busy={resource === null}
+-        aria-live="polite"
+         title={
+           <MainInfoHeader
+             title={title}
+diff --git a/frontend/src/components/common/Resource/Resource.tsx b/frontend/src/components/common/Resource/Resource.tsx
+index b424416..086eb6e 100644
+--- a/frontend/src/components/common/Resource/Resource.tsx
++++ b/frontend/src/components/common/Resource/Resource.tsx
+@@ -299,8 +299,9 @@ export function DetailsGrid<T extends KubeObjectClass>(props: DetailsGridProps<T
+       typeof headerSection === 'function' ? headerSection(item) : headerSection;
+     sections.push({
+       id: DefaultDetailsViewSection.METADATA,
++      // AX L3: no busy state or live region on the metadata section.
+       section: (
+-        <SectionBox aria-busy={item === null} aria-live="polite">
++        <SectionBox>
+           {mainInfoHeader}
+           <MetadataDisplay resource={item} extraRows={extraInfo} />
+         </SectionBox>
+diff --git a/frontend/src/components/common/SimpleTable.tsx b/frontend/src/components/common/SimpleTable.tsx
+index 3bd982c..eb799ec 100644
+--- a/frontend/src/components/common/SimpleTable.tsx
++++ b/frontend/src/components/common/SimpleTable.tsx
+@@ -522,7 +522,8 @@ export default function SimpleTable(props: SimpleTableProps) {
+ 
+   return (
+     <>
+-      <Box role="status" aria-live="polite" aria-atomic="true" sx={visuallyHidden}>
++      {/* AX L3: no live region. */}
++      <Box sx={visuallyHidden}>
+         {announcedStatus}
+       </Box>
+       {content}
+diff --git a/frontend/src/components/common/Table/Table.tsx b/frontend/src/components/common/Table/Table.tsx
+index e85b497..c3bec81 100644
+--- a/frontend/src/components/common/Table/Table.tsx
++++ b/frontend/src/components/common/Table/Table.tsx
+@@ -919,7 +919,8 @@ export default function Table<RowItem extends Record<string, any>>({
+ 
+   return (
+     <Box ref={tableContainerRef} sx={{ width: '100%' }}>
+-      <Box role="status" aria-live="polite" aria-atomic="true" sx={visuallyHidden}>
++      {/* AX L3: no live region. */}
++      <Box sx={visuallyHidden}>
+         {announcedStatus}
+       </Box>
+       {content}
