@@ -223,12 +223,15 @@ export const openmct: AppAdapter<Seed> = {
   },
 
   tasks: TASKS,
+  // The axe scan in DESIGN.md §10 also covers the create dialog and Edit Properties, which take
+  // two clicks; `setup` is one selector, so they wait for multi-step setup.
   evalStates: [
-    { name: 'my-items', path: '/#/browse/mine' },
     { name: 'prod-folder', path: '/#/browse/mine/ops-prod' },
     { name: 'battery-temp', path: '/#/browse/mine/ops-prod/p-battery' },
     { name: 'overview', path: '/#/browse/mine/ops-prod/p-overview' },
+    { name: 'overview-editing', path: '/#/browse/mine/ops-prod/p-overview', setup: '.l-browse-bar__actions__edit' },
     { name: 'create-menu', path: '/#/browse/mine/ops-prod', setup: '.c-create-button' },
-    { name: 'more-actions', path: '/#/browse/mine/ops-prod/p-battery', setup: '.l-browse-bar__actions .icon-3-dots' },
+    { name: 'more-actions', path: '/#/browse/mine/ops-prod/p-battery', setup: 'button.l-browse-bar__actions.icon-3-dots' },
+    { name: 'conductor-popup', path: '/#/browse/mine/ops-prod', setup: '.c-compact-tc__setting-value' },
   ],
 };
