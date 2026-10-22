@@ -161,6 +161,19 @@ The APG patterns and agent hints built here helped on what-iff and were neutral 
 
 Open MCT's WCAG dip is one task. Reordering frames in a Flexible Layout is a drag, and only the patterns tier adds a keyboard alternative. WCAG 2.5.7 requires a single-pointer alternative to dragging, but axe can't test for it, so an axe-clean tier still shipped without one. Haiku 4.5 failed it three times there and claimed success each time.
 
+### When the interface is a tool list
+
+[WebMCP](https://github.com/webmachinelearning/webmcp) lets a page hand an agent its own actions as tools, so the agent never reads the markup. On what-iff, Claude Haiku 4.5 did the same four tasks through the page and through WebMCP, with the tools either described or stripped to `action_1`…`action_8`:
+
+| Claude Haiku 4.5 on what-iff | Pass | Tool calls | Tokens per success | Cost per success |
+|:---|---:|---:|---:|---:|
+| Playwright MCP, div soup | 9 / 12 | 34.7 | 2.14M | $0.37 |
+| Playwright MCP, WCAG | 12 / 12 | 28.8 | 1.19M | $0.25 |
+| WebMCP, described tools (all tiers) | 36 / 36 | 3.4 | 41k | $0.029 |
+| WebMCP, undescribed tools (all tiers) | 6 / 36 | 16.7 | 2.34M | $0.77 |
+
+Described tools made the markup irrelevant and the task cheap. Undescribed tools were worse than div soup: in 19 of 30 failures the agent deleted the memory it was meant to change. A tool's name and description are its accessible name. Details: [interfaces](results/published/what-iff/README.md#interfaces-webmcp-and-the-page-claude-haiku-45).
+
 <details>
 <summary>what-iff in detail: tokens, cost and tool calls per model and tier</summary>
 

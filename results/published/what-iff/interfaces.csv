@@ -1,0 +1,109 @@
+model,interface,tier,ax_level,task,run,pass,claimed_done,claim_correct,tool_calls,browser_tool_calls,screenshots,input_tokens,output_tokens,cache_read_tokens,cache_creation_tokens,cost_usd,wall_ms,turns,exit_code,timed_out,timestamp,fail_reasons
+claude-haiku-4-5,playwright-mcp,div-soup,3,T1,1,true,true,true,12,12,0,106,2462,244300,28877,0.09460000000000002,55226,13,0,false,2026-10-22T22:26:10.836Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T1,1,true,true,true,12,12,0,106,2331,248905,30684,0.0980195,43617,13,0,false,2026-10-22T22:26:56.358Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T1,1,true,true,true,12,12,0,106,2153,257206,34012,0.1046156,39564,13,0,false,2026-10-22T22:27:37.750Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T2,1,false,false,true,58,58,3,474,75,2673866,70788,0,600430,59,143,true,2026-10-22T22:37:39.958Z,target still says 9:40 | target does not say 10:15 | "Prefers aisle seats on flights": starred changed (false -> true)
+claude-haiku-4-5,playwright-mcp,wcag,0,T2,1,true,true,true,35,35,0,290,5553,1116787,50503,0.24073969999999997,96721,36,0,false,2026-10-22T22:39:18.442Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T2,1,true,true,true,33,33,0,274,4924,1166083,57751,0.25700429999999996,86207,34,0,false,2026-10-22T22:40:46.545Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T3,1,true,true,true,28,28,0,234,4646,1016274,69910,0.26491139999999996,83941,29,0,false,2026-10-22T22:42:12.178Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T3,1,true,true,true,20,20,0,170,3900,638704,56394,0.19632840000000001,70223,21,0,false,2026-10-22T22:43:24.226Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T3,1,true,true,true,18,18,0,154,3167,564041,58781,0.18995510000000002,52821,19,0,false,2026-10-22T22:44:18.905Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T5,1,true,true,true,46,46,0,378,8917,2239701,93160,0.45525310000000013,144593,47,0,false,2026-10-22T22:46:45.279Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T5,1,true,true,true,66,66,10,538,12064,3963230,102185,0.6615510000000001,244605,67,0,false,2026-10-22T22:50:51.668Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T5,1,true,true,true,45,45,0,370,7489,2149842,92820,0.4384392,142176,46,0,false,2026-10-22T22:53:15.651Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T1,2,true,true,true,12,12,0,106,2666,245824,30208,0.0984344,42038,13,0,false,2026-10-22T22:53:59.462Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T1,2,true,true,true,12,12,0,106,2172,249323,30745,0.09738830000000001,42592,13,0,false,2026-10-22T22:54:43.902Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T1,2,true,true,true,12,12,0,106,2279,257683,34083,0.1054353,41197,13,0,false,2026-10-22T22:55:26.903Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T2,2,true,true,true,31,31,0,258,5273,1004649,49846,0.22677989999999998,87665,32,0,false,2026-10-22T22:56:56.283Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T2,2,true,true,true,28,28,0,234,4904,873455,47894,0.20788749999999998,83291,29,0,false,2026-10-22T22:58:21.437Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T2,2,true,true,true,34,34,0,282,5219,1161678,48068,0.23868080000000003,111619,35,0,false,2026-10-22T23:00:14.916Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T3,2,true,true,true,24,24,0,202,4104,774829,60472,0.21914889999999995,85956,25,0,false,2026-10-22T23:01:42.645Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T3,2,true,true,true,32,32,0,266,4927,1157020,71602,0.28380700000000003,86119,33,0,false,2026-10-22T23:03:10.586Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T3,2,true,true,true,18,18,0,154,3375,565928,58993,0.1916078,57668,19,0,false,2026-10-22T23:04:10.033Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T5,2,false,false,true,64,64,0,522,12206,4135536,120264,0.7156336,245261,65,0,false,2026-10-22T23:08:17.034Z,target is not archived
+claude-haiku-4-5,playwright-mcp,wcag,0,T5,2,true,true,true,31,31,0,258,5002,1034934,60119,0.24899940000000004,112030,32,0,false,2026-10-22T23:10:10.824Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T5,2,true,true,true,29,29,0,242,4868,1044662,68135,0.26531820000000006,96004,30,0,false,2026-10-22T23:11:48.738Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T1,3,true,true,true,12,12,0,106,2656,245670,30210,0.09837299999999999,40665,13,0,false,2026-10-22T23:12:31.153Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T1,3,true,true,true,12,12,0,106,2313,249229,30709,0.09801190000000001,36785,13,0,false,2026-10-22T23:13:09.652Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T1,3,true,true,true,13,13,0,114,2329,278018,34802,0.1091648,43284,14,0,false,2026-10-22T23:13:54.731Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T2,3,true,true,true,59,59,0,482,9814,3254202,94163,0.5632982,169308,60,0,false,2026-10-22T23:16:45.911Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T2,3,true,true,true,32,32,0,266,4387,987606,47351,0.21566360000000004,78272,33,0,false,2026-10-22T23:18:05.871Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T2,3,true,true,true,31,31,0,258,5265,1087931,57275,0.2499261,93627,32,0,false,2026-10-22T23:19:41.389Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T3,3,true,true,true,27,27,0,226,4459,945800,67208,0.251517,88373,28,0,false,2026-10-22T23:21:11.558Z,
+claude-haiku-4-5,playwright-mcp,wcag,0,T3,3,true,true,true,18,18,0,154,3714,534080,52835,0.17780200000000004,55902,19,0,false,2026-10-22T23:22:09.255Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T3,3,true,true,true,24,24,0,202,3662,861602,72613,0.24989820000000001,75923,25,0,false,2026-10-22T23:23:26.997Z,
+claude-haiku-4-5,playwright-mcp,div-soup,3,T5,3,false,false,true,43,43,3,354,8428,1669708,65706,0.3408768,159325,44,0,false,2026-10-22T23:26:08.003Z,target is not archived
+claude-haiku-4-5,playwright-mcp,wcag,0,T5,3,true,true,true,48,48,0,394,9318,2435992,94842,0.4802672000000001,157218,49,0,false,2026-10-22T23:28:47.066Z,
+claude-haiku-4-5,playwright-mcp,patterns,4,T5,3,true,true,true,47,47,0,386,7306,2151278,91398,0.4348398000000001,136521,48,0,false,2026-10-22T23:31:05.445Z,
+claude-haiku-4-5,webmcp,div-soup,3,T1,1,true,true,true,3,0,0,34,915,26927,9741,0.0267837,16359,4,0,false,2026-10-22T22:25:36.745Z,
+claude-haiku-4-5,webmcp,wcag,0,T1,1,true,true,true,3,0,0,34,998,26940,9748,0.027214000000000002,12489,4,0,false,2026-10-22T22:25:50.953Z,
+claude-haiku-4-5,webmcp,patterns,4,T1,1,true,true,true,4,0,0,34,950,27149,9994,0.0274869,17308,5,0,false,2026-10-22T22:26:10.040Z,
+claude-haiku-4-5,webmcp,div-soup,3,T2,1,true,true,true,4,0,0,42,930,36188,9993,0.0282968,15899,5,0,false,2026-10-22T22:26:27.887Z,
+claude-haiku-4-5,webmcp,wcag,0,T2,1,true,true,true,3,0,0,34,800,26686,9585,0.0258726,15140,4,0,false,2026-10-22T22:26:45.053Z,
+claude-haiku-4-5,webmcp,patterns,4,T2,1,true,true,true,3,0,0,34,946,27020,9755,0.026975999999999997,15281,4,0,false,2026-10-22T22:27:02.261Z,
+claude-haiku-4-5,webmcp,div-soup,3,T3,1,true,true,true,4,0,0,42,993,40599,12191,0.0334489,20542,5,0,false,2026-10-22T22:27:24.642Z,
+claude-haiku-4-5,webmcp,wcag,0,T3,1,true,true,true,4,0,0,34,1013,27235,10070,0.027962499999999998,14906,5,0,false,2026-10-22T22:27:41.241Z,
+claude-haiku-4-5,webmcp,patterns,4,T3,1,true,true,true,4,0,0,34,1230,29420,12432,0.03399,18096,5,0,false,2026-10-22T22:28:01.099Z,
+claude-haiku-4-5,webmcp,div-soup,3,T5,1,true,true,true,3,0,0,34,789,28945,11808,0.0304895,13368,4,0,false,2026-10-22T22:28:16.180Z,
+claude-haiku-4-5,webmcp,wcag,0,T5,1,true,true,true,3,0,0,34,724,26581,9492,0.0252961,11269,4,0,false,2026-10-22T22:28:29.248Z,
+claude-haiku-4-5,webmcp,patterns,4,T5,1,true,true,true,3,0,0,34,730,28723,11714,0.0299843,13327,4,0,false,2026-10-22T22:28:44.271Z,
+claude-haiku-4-5,webmcp,div-soup,3,T1,2,true,true,true,4,0,0,42,1114,36830,10157,0.029609000000000003,13942,5,0,false,2026-10-22T22:29:00.072Z,
+claude-haiku-4-5,webmcp,wcag,0,T1,2,true,true,true,3,0,0,34,926,26900,9717,0.026788,16296,4,0,false,2026-10-22T22:29:18.057Z,
+claude-haiku-4-5,webmcp,patterns,4,T1,2,true,true,true,3,0,0,34,816,26708,9586,0.025956800000000002,12595,4,0,false,2026-10-22T22:29:32.412Z,
+claude-haiku-4-5,webmcp,div-soup,3,T2,2,true,true,true,3,0,0,34,827,26637,9586,0.0260047,18511,4,0,false,2026-10-22T22:29:52.813Z,
+claude-haiku-4-5,webmcp,wcag,0,T2,2,true,true,true,3,0,0,34,831,26830,9785,0.026442,13585,4,0,false,2026-10-22T22:30:08.342Z,
+claude-haiku-4-5,webmcp,patterns,4,T2,2,true,true,true,3,0,0,34,988,29124,11981,0.0318484,15969,4,0,false,2026-10-22T22:30:26.361Z,
+claude-haiku-4-5,webmcp,div-soup,3,T3,2,true,true,true,4,0,0,34,1201,29275,12462,0.033890500000000004,16661,5,0,false,2026-10-22T22:30:45.107Z,
+claude-haiku-4-5,webmcp,wcag,0,T3,2,true,true,true,4,0,0,34,914,26928,9936,0.0271688,12853,5,0,false,2026-10-22T22:30:59.897Z,
+claude-haiku-4-5,webmcp,patterns,4,T3,2,true,true,true,4,0,0,34,1061,29200,12240,0.032739,14829,5,0,false,2026-10-22T22:31:16.457Z,
+claude-haiku-4-5,webmcp,div-soup,3,T5,2,true,true,true,3,0,0,34,900,29118,11931,0.031307800000000004,12618,4,0,false,2026-10-22T22:31:30.932Z,
+claude-haiku-4-5,webmcp,wcag,0,T5,2,true,true,true,3,0,0,34,801,29033,11830,0.0306023,12674,4,0,false,2026-10-22T22:31:45.564Z,
+claude-haiku-4-5,webmcp,patterns,4,T5,2,true,true,true,3,0,0,34,722,26640,9533,0.025374,11464,4,0,false,2026-10-22T22:31:58.923Z,
+claude-haiku-4-5,webmcp,div-soup,3,T1,3,true,true,true,3,0,0,34,927,26890,9719,0.026796,12975,4,0,false,2026-10-22T22:32:13.682Z,
+claude-haiku-4-5,webmcp,wcag,0,T1,3,true,true,true,3,0,0,34,825,27014,9923,0.0267064,13267,4,0,false,2026-10-22T22:32:28.863Z,
+claude-haiku-4-5,webmcp,patterns,4,T1,3,true,true,true,3,0,0,34,910,27179,10006,0.027313899999999995,13682,4,0,false,2026-10-22T22:32:44.390Z,
+claude-haiku-4-5,webmcp,div-soup,3,T2,3,true,true,true,4,0,0,42,1106,36616,10166,0.029565599999999997,16050,5,0,false,2026-10-22T22:33:02.334Z,
+claude-haiku-4-5,webmcp,wcag,0,T2,3,true,true,true,3,0,0,34,868,26711,9668,0.026381099999999998,14250,4,0,false,2026-10-22T22:33:18.552Z,
+claude-haiku-4-5,webmcp,patterns,4,T2,3,true,true,true,4,0,0,42,966,36324,10045,0.028594400000000002,18445,5,0,false,2026-10-22T22:33:38.892Z,
+claude-haiku-4-5,webmcp,div-soup,3,T3,3,true,true,true,5,0,0,42,1051,36538,10161,0.0292728,15605,6,0,false,2026-10-22T22:33:56.250Z,
+claude-haiku-4-5,webmcp,wcag,0,T3,3,true,true,true,5,0,0,34,1158,29732,12336,0.0334692,14319,6,0,false,2026-10-22T22:34:12.385Z,
+claude-haiku-4-5,webmcp,patterns,4,T3,3,true,true,true,4,0,0,26,1112,20256,12247,0.0321056,14162,5,0,false,2026-10-22T22:34:28.231Z,
+claude-haiku-4-5,webmcp,div-soup,3,T5,3,true,true,true,3,0,0,34,817,26744,9607,0.0260074,13575,4,0,false,2026-10-22T22:34:43.657Z,
+claude-haiku-4-5,webmcp,wcag,0,T5,3,true,true,true,3,0,0,34,745,28686,11721,0.030069600000000002,13092,4,0,false,2026-10-22T22:34:58.714Z,
+claude-haiku-4-5,webmcp,patterns,4,T5,3,true,true,true,3,0,0,34,659,26499,9461,0.024900900000000004,12964,4,0,false,2026-10-22T22:35:13.506Z,
+claude-haiku-4-5,webmcp-soup,div-soup,3,T1,1,false,true,false,23,0,0,194,9460,569330,48969,0.202365,178072,24,0,false,2026-10-22T22:28:23.549Z,archived changed (false -> true)
+claude-haiku-4-5,webmcp-soup,wcag,0,T1,1,false,false,true,15,0,0,130,3771,250905,29883,0.10384150000000002,54546,16,0,false,2026-10-22T22:29:19.949Z,target was deleted
+claude-haiku-4-5,webmcp-soup,patterns,4,T1,1,false,false,true,23,0,0,194,8863,492327,37202,0.16814569999999998,105992,24,0,false,2026-10-22T22:31:07.811Z,target is not starred
+claude-haiku-4-5,webmcp-soup,div-soup,3,T2,1,true,true,true,8,0,0,74,2391,100099,20627,0.0632929,35357,9,0,false,2026-10-22T22:31:44.925Z,
+claude-haiku-4-5,webmcp-soup,wcag,0,T2,1,false,false,true,22,0,0,186,6271,544017,46740,0.17942270000000002,80051,23,0,false,2026-10-22T22:33:06.953Z,target was deleted
+claude-haiku-4-5,webmcp-soup,patterns,4,T2,1,false,false,true,13,0,0,114,3633,195244,22977,0.0837574,48109,14,0,false,2026-10-22T22:33:56.777Z,target still says 9:40 | target does not say 10:15
+claude-haiku-4-5,webmcp-soup,div-soup,3,T3,1,true,true,true,10,0,0,90,3009,135166,23045,0.07474160000000002,39427,11,0,false,2026-10-22T22:34:38.000Z,
+claude-haiku-4-5,webmcp-soup,wcag,0,T3,1,true,true,true,8,0,0,74,3277,102715,21398,0.0695265,39115,9,0,false,2026-10-22T22:35:18.913Z,
+claude-haiku-4-5,webmcp-soup,patterns,4,T3,1,false,false,true,22,0,0,186,5551,523170,48011,0.17628000000000005,75700,23,0,false,2026-10-22T22:36:36.743Z,target was deleted
+claude-haiku-4-5,webmcp-soup,div-soup,3,T5,1,false,true,false,7,0,0,66,2988,87124,23630,0.0709784,36848,8,0,false,2026-10-22T22:37:15.772Z,target was deleted
+claude-haiku-4-5,webmcp-soup,wcag,0,T5,1,false,false,true,22,0,0,186,7362,536801,45680,0.18203609999999998,93612,23,0,false,2026-10-22T22:38:51.358Z,target was deleted
+claude-haiku-4-5,webmcp-soup,patterns,4,T5,1,false,false,true,13,0,0,114,4044,197143,23188,0.0864243,51876,14,0,false,2026-10-22T22:39:45.050Z,target is not archived
+claude-haiku-4-5,webmcp-soup,div-soup,3,T1,2,false,false,true,13,0,0,114,4038,211244,29760,0.10094840000000001,58696,14,0,false,2026-10-22T22:40:45.440Z,target was deleted
+claude-haiku-4-5,webmcp-soup,wcag,0,T1,2,false,false,true,22,0,0,186,5743,492210,41940,0.162002,76263,23,0,false,2026-10-22T22:42:03.586Z,target was deleted
+claude-haiku-4-5,webmcp-soup,patterns,4,T1,2,false,false,true,7,0,0,66,3099,85175,19855,0.0637885,35559,8,0,false,2026-10-22T22:42:41.058Z,target was deleted
+claude-haiku-4-5,webmcp-soup,div-soup,3,T2,2,true,true,true,11,0,0,98,2901,153740,23851,0.077679,38754,12,0,false,2026-10-22T22:43:21.791Z,
+claude-haiku-4-5,webmcp-soup,wcag,0,T2,2,false,false,true,30,0,0,250,9420,792574,51774,0.23015540000000004,133359,31,0,false,2026-10-22T22:45:37.065Z,target was deleted
+claude-haiku-4-5,webmcp-soup,patterns,4,T2,2,false,false,true,44,0,0,362,11345,1445505,60270,0.3221775,149806,45,0,false,2026-10-22T22:48:08.553Z,target was deleted
+claude-haiku-4-5,webmcp-soup,div-soup,3,T3,2,false,false,true,19,0,0,162,6315,357920,31100,0.129729,83439,20,0,false,2026-10-22T22:49:33.597Z,target is not in the Lisbon trip thread
+claude-haiku-4-5,webmcp-soup,wcag,0,T3,2,false,false,true,8,0,0,74,2219,95295,17133,0.05496449999999999,29955,9,0,false,2026-10-22T22:50:05.353Z,target is not in the Lisbon trip thread
+claude-haiku-4-5,webmcp-soup,patterns,4,T3,2,false,false,true,17,0,0,146,5956,350370,38589,0.14214100000000002,76708,18,0,false,2026-10-22T22:51:23.813Z,target was deleted
+claude-haiku-4-5,webmcp-soup,div-soup,3,T5,2,false,true,false,9,0,0,82,5742,122544,26207,0.09346040000000001,62541,10,0,false,2026-10-22T22:52:28.006Z,target was deleted
+claude-haiku-4-5,webmcp-soup,wcag,0,T5,2,false,false,true,9,0,0,82,2943,121633,26228,0.07941630000000001,36460,10,0,false,2026-10-22T22:53:06.290Z,target was deleted
+claude-haiku-4-5,webmcp-soup,patterns,4,T5,2,false,false,true,21,0,0,178,6363,418009,32926,0.13964590000000002,83129,22,0,false,2026-10-22T22:54:31.272Z,target is not archived
+claude-haiku-4-5,webmcp-soup,div-soup,3,T1,3,false,true,false,11,0,0,98,3589,167475,22652,0.08009449999999999,45677,12,0,false,2026-10-22T22:55:18.816Z,archived changed (false -> true)
+claude-haiku-4-5,webmcp-soup,wcag,0,T1,3,false,false,true,10,0,0,90,2832,145596,27127,0.0830636,37795,11,0,false,2026-10-22T22:55:58.313Z,target was deleted
+claude-haiku-4-5,webmcp-soup,patterns,4,T1,3,false,false,true,19,0,0,162,5428,438002,43727,0.15855619999999998,68443,20,0,false,2026-10-22T22:57:08.578Z,target was deleted
+claude-haiku-4-5,webmcp-soup,div-soup,3,T2,3,false,true,false,15,0,0,130,3770,247567,27659,0.09905470000000001,54196,16,0,false,2026-10-22T22:58:04.552Z,starred changed (false -> true)
+claude-haiku-4-5,webmcp-soup,wcag,0,T2,3,false,false,true,16,0,0,138,5711,277763,27787,0.11204330000000001,78591,17,0,false,2026-10-22T22:59:24.950Z,target still says 9:40 | target does not say 10:15
+claude-haiku-4-5,webmcp-soup,patterns,4,T2,3,false,false,true,23,0,0,194,5642,545562,44209,0.1713782,92594,24,0,false,2026-10-22T23:00:59.334Z,target was deleted
+claude-haiku-4-5,webmcp-soup,div-soup,3,T3,3,false,false,true,27,0,0,226,7805,695257,50651,0.21007869999999998,124736,28,0,false,2026-10-22T23:03:05.926Z,target was deleted
+claude-haiku-4-5,webmcp-soup,wcag,0,T3,3,false,false,true,18,0,0,154,7292,409933,41811,0.1612293,102530,19,0,false,2026-10-22T23:04:50.357Z,target is not in the Lisbon trip thread | content changed ("Book dinner at Cervejaria Ramiro; the seafood restaurant Priya recommended" -> "3b4c17c3-3efd-4e12-a7ba-0ceb8268a8bb") | archived changed (false -> true) | starred changed (false -> true)
+claude-haiku-4-5,webmcp-soup,patterns,4,T3,3,false,false,true,14,0,0,122,4445,233836,28974,0.1036786,55824,15,0,false,2026-10-22T23:05:47.958Z,target was deleted
+claude-haiku-4-5,webmcp-soup,div-soup,3,T5,3,true,true,true,14,0,0,122,4114,239610,29733,0.10411899999999999,61794,15,0,false,2026-10-22T23:06:51.629Z,
+claude-haiku-4-5,webmcp-soup,wcag,0,T5,3,false,false,true,29,0,0,242,7947,760349,49340,0.21469190000000002,109993,30,0,false,2026-10-22T23:08:43.407Z,target was deleted
+claude-haiku-4-5,webmcp-soup,patterns,4,T5,3,true,true,true,10,0,0,90,2568,141904,21263,0.0696464,37995,11,0,false,2026-10-22T23:09:23.280Z,

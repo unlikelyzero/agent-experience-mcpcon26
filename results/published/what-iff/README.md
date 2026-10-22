@@ -30,6 +30,50 @@ graded from app state through the API, not from the agent's claim. Costs are lis
 Regenerate with `node apps/what-iff/summarize.mjs`. Every run is a row in [`runs.csv`](runs.csv), built
 from the runner's CSVs by `apps/what-iff/export-runs.mjs`, which also reprices Haiku 5.5.
 
+## Interfaces: WebMCP and the page (Claude Haiku 4.5)
+
+The same four tasks, three runs each, with Claude Haiku 4.5 reaching the app three ways. Every
+row is in [`interfaces.csv`](interfaces.csv).
+
+- **Playwright MCP**: the accessibility tree, as in the table above. These runs are a fresh set
+  made alongside the WebMCP runs, so all three interfaces share a day and a build.
+- **WebMCP, described tools**: with `?webmcp=1` the app registers `sign_in`, `list_memories`,
+  `list_threads`, `star_memory`, `edit_memory`, `move_memory`, `archive_memory` and
+  `delete_memory` with `navigator.modelContext`. Each calls the services the UI uses. The agent
+  gets only those tools, through `webmcp-server.mjs` on the fork, which adapts the bridge from
+  [WindTunnel](https://github.com/nekuda-ai/WindTunnel)'s WebMCP arm.
+- **WebMCP, tool soup**: `?webmcp=soup` registers the same eight operations as `action_1` to
+  `action_8`, with no descriptions, untyped `p1`/`p2` parameters and raw API results.
+
+The tool registrations are identical at every tier. Only the markup, which a WebMCP agent never
+reads, changes.
+
+| Interface | Tier | Pass | Mean tool calls | Tokens / success | $ / success | Median time | False "done" |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Playwright MCP | div-soup | 9/12 | 34.7 | 2.14M | $0.37 | 88 s | 0 |
+| Playwright MCP | wcag | 12/12 | 28.8 | 1.19M | $0.25 | 78 s | 0 |
+| Playwright MCP | patterns | 12/12 | 26.3 | 1.03M | $0.24 | 76 s | 0 |
+| WebMCP, described | div-soup | 12/12 | 3.6 | 43k | $0.029 | 16 s | 0 |
+| WebMCP, described | wcag | 12/12 | 3.3 | 39k | $0.028 | 13 s | 0 |
+| WebMCP, described | patterns | 12/12 | 3.4 | 40k | $0.029 | 14 s | 0 |
+| WebMCP, tool soup | div-soup | 4/12 | 13.9 | 876k | $0.33 | 54 s | 5 |
+| WebMCP, tool soup | wcag | 1/12 | 17.4 | 5.02M | $1.63 | 76 s | 0 |
+| WebMCP, tool soup | patterns | 1/12 | 18.8 | 5.56M | $1.69 | 68 s | 0 |
+
+Regenerate with `node apps/what-iff/summarize.mjs results/published/what-iff/interfaces.csv`.
+108 runs, $14.83.
+
+- Described tools passed every run at every tier in about three calls (sign in, list, act), at
+  roughly a twentieth of the page's cost per success. The markup tier stopped mattering, as it
+  should when the agent doesn't read the page.
+- Tool soup did worse than div soup: 6 of 36 runs passed. In 19 of its 30 failures the agent
+  deleted the memory it was asked to change, while guessing what an unnamed tool did. It also
+  claimed success five times when it had failed. Soup's tools are the same at every tier, so the
+  spread between its tiers (4/12 against 1/12) is noise at this sample size.
+- A WebMCP tool's name, description and schema do for an agent what an accessible name does for a
+  control. Left out, the tool layer is the most destructive interface measured here.
+- WebMCP doesn't replace markup for people: a screen-reader user still reads the page.
+
 ## Evals teams already run
 
 | Signal | Div soup | WCAG | Patterns |
@@ -46,6 +90,9 @@ Haiku 5.5 patterns run (T3, 47 tool calls, 1.58M tokens) is an outlier; without 
 still about 5% above WCAG, so the hints don't help Haiku 5.5 on these tasks.
 
 ## Limits
+
+- The interface comparison uses one model, Claude Haiku 4.5. The WebMCP tools wrap the app's existing
+  operations one to one, so a task takes a single call per action, which favours WebMCP by design.
 
 - One app and small samples: 3 runs per task per tier per model.
 - T4 ("delete every archived old-apartment memory") is excluded. It failed in all 9 Opus runs at
