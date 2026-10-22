@@ -51,9 +51,14 @@ type Model = { name: string; type: string; location: string } & Record<string, u
 type Seed = Record<string, Model>;
 
 const id = (key: string) => ({ key, namespace: '' });
-const generator = (name: string, location: string, amplitude: number): Model => ({
+/**
+ * Battery Temp emits one point per 2.8 h, so no live point lands while the pixel eval shoots the
+ * states that show it. Its plot is empty; no task reads it.
+ */
+const BATTERY_RATE_HZ = 0.0001;
+const generator = (name: string, location: string, amplitude: number, dataRateInHz = 1): Model => ({
   name, type: 'generator', location,
-  telemetry: { period: 10, amplitude, offset: 0, dataRateInHz: 1, phase: 0, randomness: 0, loadDelay: 0,
+  telemetry: { period: 10, amplitude, offset: 0, dataRateInHz, phase: 0, randomness: 0, loadDelay: 0,
     infinityValues: false, exceedFloat32: false, staleness: false },
 });
 const layout = (name: string, location: string): Model =>
@@ -62,7 +67,7 @@ const layout = (name: string, location: string): Model =>
 const folder = (p: 'p' | 's', name: string, amplitude: number): Seed => ({
   [`ops-${p === 'p' ? 'prod' : 'staging'}`]: { name, type: 'folder', location: 'mine',
     composition: [id(`${p}-battery`), id(`${p}-bus`), id(`${p}-overview`)] },
-  [`${p}-battery`]: generator('Battery Temp', `ops-${p === 'p' ? 'prod' : 'staging'}`, amplitude),
+  [`${p}-battery`]: generator('Battery Temp', `ops-${p === 'p' ? 'prod' : 'staging'}`, amplitude, BATTERY_RATE_HZ),
   [`${p}-bus`]: generator('Bus Voltage', `ops-${p === 'p' ? 'prod' : 'staging'}`, 1),
   [`${p}-overview`]: {
     name: 'Overview', type: 'flexible-layout', location: `ops-${p === 'p' ? 'prod' : 'staging'}`,
@@ -77,6 +82,13 @@ const folder = (p: 'p' | 's', name: string, amplitude: number): Seed => ({
 });
 const PROD_AMPLITUDE = 2.75;
 const STAGING_AMPLITUDE = 3.25;
+/**
+ * A fixed half hour long past, for states that show Battery Temp. The generator streams points from
+ * a worker on the real clock, which the eval's frozen page clock doesn't reach; the plot draws a
+ * segment toward each new point, and that flickers at its right edge. See BATTERY_RATE_HZ.
+ */
+const PAST = 'tc.mode=fixed&tc.startBound=1767225600000&tc.endBound=1767227400000&tc.timeSystem=utc';
+
 /** Exported for hand-checking graders without re-seeding. */
 export const FIXTURE: Seed = {
   mine: { name: 'My Items', type: 'folder', location: 'ROOT', composition: [id('ops-prod'), id('ops-staging')] },
@@ -142,11 +154,15 @@ const TASKS: Task<Seed>[] = [
   {
     id: 'O3', title: 'Reorder a Flexible Layout',
     prompt: 'In Open MCT, open the "Overview" Flexible Layout in the "Ops Prod" folder and move the "Power" frame above the "Thermal" frame. Save the layout.',
-    grade: (seed) => grade(seed, { 'p-overview': ['configuration'] }, (now, added) => {
+    // The composition's order is only the inspector's Elements list; reordering it while looking for
+    // the frames is harmless, so only its members must stay.
+    grade: (seed) => grade(seed, { 'p-overview': ['configuration', 'composition'] }, (now, added) => {
       const containers = (now('p-overview').configuration as { containers: { frames: { domainObjectIdentifier: { key: string } }[] }[] }).containers;
       const order = containers.flatMap(c => c.frames.map(f => f.domainObjectIdentifier.key));
+      const members = (refs: unknown) => keys(refs).sort();
       return [
         ...(isDeepStrictEqual(order, ['p-power', 'p-thermal']) ? [] : [`p-overview frames are ${order.join(', ')}, not p-power, p-thermal`]),
+        ...(isDeepStrictEqual(members(now('p-overview').composition), members(seed['p-overview']!.composition)) ? [] : ['p-overview composition members changed']),
         ...nothingAdded(added),
       ];
     }),
@@ -223,15 +239,17 @@ export const openmct: AppAdapter<Seed> = {
   },
 
   tasks: TASKS,
-  // The axe scan in DESIGN.md §10 also covers the create dialog and Edit Properties, which take
-  // two clicks; `setup` is one selector, so they wait for multi-step setup.
+  // Setup selectors avoid the `button` tag and the classes div-soup suffixes, so they work in every
+  // tier.
   evalStates: [
     { name: 'prod-folder', path: '/#/browse/mine/ops-prod' },
-    { name: 'battery-temp', path: '/#/browse/mine/ops-prod/p-battery' },
+    { name: 'battery-temp', path: `/#/browse/mine/ops-prod/p-battery?${PAST}` },
     { name: 'overview', path: '/#/browse/mine/ops-prod/p-overview' },
     { name: 'overview-editing', path: '/#/browse/mine/ops-prod/p-overview', setup: '.l-browse-bar__actions__edit' },
-    { name: 'create-menu', path: '/#/browse/mine/ops-prod', setup: '.c-create-button' },
-    { name: 'more-actions', path: '/#/browse/mine/ops-prod/p-battery', setup: 'button.l-browse-bar__actions.icon-3-dots' },
+    { name: 'create-menu', path: '/#/browse/mine/ops-prod', setup: '.c-create-button--w > *' },
+    { name: 'more-actions', path: `/#/browse/mine/ops-prod/p-battery?${PAST}`, setup: '.l-browse-bar .icon-3-dots' },
+    { name: 'create-dialog', path: '/#/browse/mine/ops-prod', setup: ['.c-create-button--w > *', 'li:text-is("Display Layout")'] },
+    { name: 'edit-properties', path: `/#/browse/mine/ops-prod/p-battery?${PAST}`, setup: ['.l-browse-bar .icon-3-dots', 'li:text-is("Edit Properties...")'] },
     { name: 'conductor-popup', path: '/#/browse/mine/ops-prod', setup: '.c-compact-tc__setting-value' },
   ],
 };

@@ -309,84 +309,65 @@ its `package.json` asks for Node `>=24.14.1`.
 
 ### Open MCT catalog
 
-Each tier is a patch against the pin and scoped to the surfaces the tasks use:
+Each tier is a patch against the pin, scoped to the surfaces the tasks use:
 
-- the object tree
+- the object tree and Recently Viewed
 - the browse bar, its More actions menu and its Save menu
 - the Create button and menu
 - the create and Edit Properties dialogs and their forms
-- the inspector's Properties tab
+- the inspector's tabs and Properties
+- the folder grid view
 - Flexible Layout edit mode
 - the time conductor, which is on every page
 
-**`div-soup`**
+Each tier's commit message in `.work/openmct/<tier>` lists every component it
+touches.
 
-| Where | Change | Status |
+**`div-soup`** (`tiers/div-soup.patch`, 46 files)
+
+| Layer | Change |
+|---|---|
+| Names | `aria-label`, `aria-labelledby`, `title` and `<label for>` go. Visible text stays, so text controls keep their names, while icon buttons, form fields, the tree and the conductor lose theirs |
+| Roles | Task-path `<button>`s become `<div class="ax-btn">`: the Create button, browse bar actions, view switcher, overlay close and footer, form OK/Cancel, grid item info, search results, the shell's header, pane and Recently Viewed buttons, and the Snapshot menu button. These roles go: `tree`/`treeitem`, `menu`/`menuitem`/`group`/`separator`, `dialog`, `tablist`/`tab`/`tabpanel`, `grid`/`row`/`gridcell`/`columnheader`, `group`, `switch`, `main`/`region`/`navigation`/`search`, `alert`/`status`. Menu, Save, property, location, breadcrumb and Recently Viewed lists get `role="none"`. `tabindex` and Enter handlers go |
+| State | `aria-expanded`, `aria-modal`, `aria-disabled`, `aria-live` and `aria-describedby` go. `aria-disabled` also drew the disabled look, so the create button and menu items use the app's own `.disabled` class instead |
+| Look | `_controls.scss` gets `div:is(div):where(.ax-btn)`: Chrome's button defaults plus the app's `button` element rules, at specificity (0,0,2). That beats the app's bare `div { position: relative }` and loses to every class rule, as `button` did |
+| Class suffix | A webpack plugin appends one random suffix per build to `c-tree__item`, `c-tree__item-h`, `c-create-button`, `c-menu`, `c-super-menu`, `c-overlay`, `c-fl-frame`, `c-grid-item`, `c-inspector__tab` and `l-browse-bar__actions`. It renames whole class tokens in the emitted JS and CSS alike, and none of these names is built by concatenation |
+| Kept | Native text, number, select and toggle checkbox inputs; plot controls and the header indicators, which no task uses |
+
+**`wcag`** (`tiers/wcag.patch`, 17 files). Shipped Open MCT has 110
+WCAG-tagged axe violation nodes over the nine `evalStates`; `wcag` has 0.
+
+| Rule | Where | Fix |
 |---|---|---|
-| Object tree (`MctTree`, `ObjectLabel`, `ViewControl`), browse bar (`BrowseBar`, `ViewSwitcher`), Create button, menus (`MenuComponent`, `SuperMenu`), dialogs and forms (`OverlayComponent`, `FormProperties`, `FormRow`, `NumberField`, `SelectField`), inspector (`InspectorTabs`, `ObjectName`, `DetailText`, `ElementItem`), Tabs view, Flexible Layout (`ContainerComponent`, `FrameComponent`), time conductor (`ConductorComponent`, `ConductorInputsFixed`, `ConductorInputsRealtime`, `ConductorMode`, `TimePopupFixed`) | Drop `aria-label`, `aria-labelledby`, `title` and `<label for>`. Visible text is kept, so text controls keep their names, and icon buttons, form fields, the tree and the conductor lose theirs | Done (`tiers/div-soup.patch`); `DatePicker` not yet |
-| Browse bar, form footer and conductor popup `<button>`s | `<div @click>` styled like `.c-button`; no `tabindex` | Not started |
-| `TreeItem`, `MctTree`, `ViewControl`, `ConductorMode` | Drop `role="tree"`, `treeitem`, `button` and `aria-expanded`. These are already `<div>`s | Not started |
-| Menus | Drop `role="menu"`, `menuitem`, `group` and `separator`, plus `aria-live` on the description | Not started |
-| `OverlayComponent` | Drop `role="dialog"` and `aria-modal` | Not started |
-| `InspectorTabs`, `TabsComponent` | Drop `role="tablist"`, `tab` and `tabindex`. Neither sets `aria-selected`; the current tab is shown only by the `is-current` class | Not started |
-| `NumberField`, `ToggleSwitch`, `CheckBoxField` | Native inputs and `role="switch"` become styled divs | Not started |
-| `NotificationBanner` | Drop `role="alert"` and `aria-live` | Not started |
-| `c-tree__item`, `c-create-button`, `l-browse-bar__actions`, `c-overlay`, `c-fl-frame`, `c-menu`, `is-current` | Per-build class suffix | Not started |
+| `aria-prohibited-attr` | Pane resize handles, conductor axis, Display Layout drop areas | `role="separator"` (dropping the deprecated `aria-grabbed`) and `role="group"`, so the existing labels are legal |
+| `aria-required-children` / `-parent` | Folder grid (`gridcell`s with no row); Flexible Layout (`columnheader` straight under `grid`, an `aria-grabbed` resize handle in a `row`) | A `role="row"` wrapper with `display: contents` in the grid view; the Flexible Layout header becomes the row and its size indicator the `columnheader`, keeping "Container Handle n" |
+| `label-content-name-mismatch` | Form OK ("Save" vs "Ok"), view switcher, conductor mode/clock/time-system buttons, frames ("Container Frame n") | Names that contain the visible text: "Ok, Save", "Grid View, Open the View Switcher Menu", "Fixed Timespan, Time Conductor Mode"; frame names go |
+| `listitem` | Breadcrumb `li`s inside a `ul role="navigation"` | `role="none"` on the items |
+| `select-name`, `label` | Plot axis selects; the Notes textarea (`for="form-notes"` vs `id="notes-textarea"`) | `aria-label` |
+| `aria-required-attr` | Toggle switches | `aria-checked` |
+| `scrollable-region-focusable` | Create menu list | `tabindex="0"` |
+| `color-contrast` (visual) | Conductor popup | Reported, not fixed |
 
-The names-only `div-soup` patch screenshots byte-identical to shipped in six
-states with the page clock frozen:
+**`patterns`** (`tiers/patterns.patch`, 31 files): the `wcag` fixes plus:
 
-- home
-- create menu
-- create dialog
-- a new Sine Wave Generator's plot
-- More actions
-- the conductor popup
+| Widget | Pattern |
+|---|---|
+| Object tree and the dialog's "Save in" tree | APG tree view: `aria-level`, `aria-selected`, the tree hands focus to the selected item, Up/Down/Home/End, Right expands or enters, Left collapses or goes to the parent, Enter/Space opens |
+| Create, More actions, view switcher, frame menus | Menu button: `aria-haspopup`, `aria-expanded` tracked through the menu API's `onDestroy`. Menus focus their first item; arrows, Home/End, Enter/Space and Escape/Tab work; focus returns to the opener |
+| Browse bar Save | Disclosure: `aria-expanded`/`aria-controls`. Its two options stay `listitem`s, because 95 e2e lookups use that role, and get `tabindex` and Enter/Space |
+| Create and Edit Properties overlays | Modal dialog: named by its visible title plus "Modal Overlay" through `aria-labelledby` (a hidden span), so `getByLabel('Modal Overlay')` still matches; Tab is trapped; focus returns to the opener |
+| Inspector tabs | Tabs: `aria-selected`, `aria-controls` to the `tabpanel`, roving `tabindex`, Left/Right with automatic activation |
+| Flexible Layout frames | In edit mode, frames are focusable and Alt+Up/Down moves a frame: a keyboard alternative to the drag O3 needs |
+| Agent hints | `aria-description` on the tree (its keys), each tree item (type and folder path, which tells Ops Prod from Ops Staging), Create, Edit, Save, Cancel, More actions, navigate up, form OK and every menu item. Contextual names on repeated controls ("View menu items for Thermal", "Large View: Thermal", "More Info about X"). Stable ids on tree items and tabs. `data-testid` on tree items, browse bar buttons, menus and items, the dialog, form rows and buttons, inspector tabs and property rows, frames and grid items |
 
-With it applied, `getByLabel('Title')`, the "Main Tree" tree, "More actions"
-and the "Period" spinbutton no longer resolve. "Create" still does, because
-its visible text names it.
+Nothing the e2e specs find by exact name is renamed in `patterns`: the
+`Navigate to X` labels, "Save", the "View menu items" title, or "Container
+Handle n". The one exception is in both compliant tiers: the compact
+conductor's mode button.
 
-**`wcag`: the shipped scan.** axe-core 4.14 ran with the five WCAG tags over
-nine states on a seeded database:
-
-- `evalStates` (prod folder, Battery Temp, Overview, Overview in edit mode,
-  create menu, More actions, conductor popup)
-- the create dialog
-- Edit Properties
-
-Shipped Open MCT is not compliant. Ten rules fail; two of them are visual and
-are reported only. That makes `wcag.patch` real work.
-
-| Rule | Impact | Where | Fix in `wcag` |
-|---|---|---|---|
-| `aria-prohibited-attr` | serious | Pane resize handles ("Resize Browse Pane", …), `.c-conductor-axis`, Flexible Layout frames ("Thermal Layout") | Give the handles `role="separator"`; drop or move the names on role-less divs |
-| `aria-required-children` | critical | Folder grid view (`GridView`: `role="grid"` with no rows), `.c-fl-container` and its frames holder | Folder: `role="list"`/`listitem`. Flexible Layout: drop the grid/row/gridcell roles it misuses |
-| `aria-required-parent` | critical | Grid view items, `.c-fl-container__header` (`columnheader`) | Follows from the fix above |
-| `label-content-name-mismatch` | serious | Form OK button (name "Save", text "Ok"), conductor mode/clock/time-system buttons, view switcher, Flexible Layout frames | Names that start with the visible text |
-| `listitem` | serious | Location breadcrumbs (`.c-location__item`) in the inspector and Recently Viewed | Wrap the items in a list |
-| `select-name` | critical | Plot axis label `<select>`s | `aria-label` |
-| `label` | critical | Notes textarea: the row's `<label for="form-notes">` misses `id="notes-textarea"` | Match the id |
-| `aria-required-attr` | critical | Edit Properties toggles (`ToggleSwitch`, `role="switch"` without `aria-checked`) | `aria-checked` |
-| `scrollable-region-focusable` | serious | Create menu list (`.c-super-menu__menu`) | `tabindex="0"` |
-| `target-size` | serious, visual | Small icon buttons (pane collapse, sync tree, new window, frame menus, ⋯) | Reported, not fixed |
-| `color-contrast` | serious, visual | Conductor popup labels and inputs | Reported, not fixed |
-
-`label-content-name-mismatch` is an axe "experimental" rule tagged
-`wcag21a`; it ran with the tag filter. Decide whether the gate counts it.
-
-**`patterns`: APG audit of the task widgets**
-
-| Widget | APG pattern | Shipped gaps to close |
-|---|---|---|
-| Object tree | Tree View | `aria-level`/`setsize`/`posinset`, roving `tabindex`, arrow-key and typeahead navigation, `aria-selected` on the navigated item. The name comes from an inner link |
-| Create, More actions, Save, conductor mode | Menu Button + Menu | `aria-haspopup="menu"`, `aria-expanded`, `aria-controls` on the buttons; arrow keys and Escape in the menu; Save's options are `<li>`s with no menu role |
-| Create and Edit Properties overlays | Dialog (Modal) | `aria-labelledby` to the dialog title instead of "Modal Overlay"; focus trap; Escape; focus back to the opener |
-| Inspector tabs | Tabs | `aria-selected`, `aria-controls`, a `tabpanel`, arrow keys |
-| Form toggles | Switch | `aria-checked` (also a `wcag` fix) |
-| Number fields | Spinbutton (native) | Labelled by the row label, not a duplicate `aria-label` |
-| Flexible Layout reorder | None; drag only | WCAG 2.2 SC 2.5.7 (Dragging Movements, AA) needs a single-pointer alternative, and axe can't detect its absence. A visible Move up/down control changes the pixels; a menu entry only changes the open-menu state. Open question |
-| Agent hints | — | `aria-describedby` on Create, Edit, Save, More actions and the menu items saying what each does; stable `id`s; `data-testid` on the tree items, the form fields and the frames |
+All three tiers pass O1–O5 done through the UI. `div-soup` was driven by text
+and CSS, `wcag` and `patterns` by roles and names. In `patterns`, 18 scripted
+keyboard checks pass, including O3 done with Alt+Up instead of a drag.
 
 ### Open MCT tasks (seeded CouchDB: folders `Ops Prod` and `Ops Staging`)
 
@@ -408,7 +389,7 @@ wrong folder gives a different answer. Object keys are fixed:
 |---|---|---|
 | O1 | Create a Display Layout named `Pass 42` in `Ops Prod` | exactly one new object, a `layout` named `Pass 42`, located in and appended to `ops-prod`'s `composition` |
 | O2 | Set the period of `Battery Temp` in `Ops Prod` to 20 seconds | `p-battery.telemetry.period` is 20 (string or number); the other telemetry fields are unchanged |
-| O3 | In `Ops Prod`'s `Overview`, move `Power` above `Thermal` and save | `p-overview`'s frames, read in container order, are `p-power`, `p-thermal` |
+| O3 | In `Ops Prod`'s `Overview`, move `Power` above `Thermal` and save | `p-overview`'s frames, read in container order, are `p-power`, `p-thermal`; its composition keeps its members, in any order (the Elements list) |
 | O4 | Rename `Bus Voltage` in `Ops Prod` to `Bus Voltage (A)` | `p-bus.name` is `Bus Voltage (A)` |
 | O5 | Report the amplitude of `Battery Temp` in `Ops Prod` | the final answer contains `2.75` and not `3.25` |
 
@@ -486,23 +467,21 @@ About 75% of the semantic locators depend on a name. The most used are:
 State assertions are rare: `aria-selected` 4, `expanded: true` 2,
 `toBeChecked` 8.
 
-**Expected shape across tiers:**
+**Expected shape across tiers** (not run yet; `ax eval roles` is not built):
 
 - **`div-soup` collapses it.** `createDomainObjectWithDefaults` in
   `e2e/appActions.js`, which nearly every spec calls, fills the form with
-  `getByLabel('Title')`. That name comes from `<label for>`. The time
-  conductor helpers, `expandEntireTree` and
-  `renameCurrentObjectFromBrowseBar` also rely on names. The names-only patch
-  alone already breaks all of them.
-- **`wcag` should match shipped.** It adds semantics without renaming
-  anything the suite queries. Two exceptions:
-  - The form's OK button is named "Save" today, and specs click
-    `getByRole('button', { name: 'Save' })`. A `label-content-name-mismatch`
-    fix that renames it to "Ok…" would break them, so the `wcag` fix must keep
-    "Save" in the name ("Ok, save").
-  - The same holds for any renamed conductor button.
-- **`patterns`** adds `data-testid`, which the suite doesn't use, so it should
-  also match shipped.
+  `getByLabel('Title')`. That name comes from `<label for>`, which
+  `div-soup` removes. The time conductor helpers, `expandEntireTree` and
+  `renameCurrentObjectFromBrowseBar` also rely on names.
+- **`wcag` should almost match shipped.** The form OK button is "Ok, Save",
+  so the substring lookups `getByRole('button', { name: 'Save' })` and
+  `getByLabel('Save')` still find it. Only the 11 lookups of the compact
+  conductor's mode button by exact name "Time Conductor Mode" stop matching.
+  Shipped breaks WCAG 2.5.3 there, so no WCAG-clean tier can keep that name.
+- **`patterns`** is `wcag` plus hints the suite doesn't query. It keeps
+  every exact name and `getByLabel('Modal Overlay')`, so it should match
+  `wcag`.
 
 Shortlist for the roles suite. These are functional specs, with no
 `@couchdb`, `@snapshot`, `@generatedata`, mobile or perf:
@@ -547,14 +526,28 @@ Running it against a tier, unchanged:
 
 - **Names from content survive name stripping.** Tree items, menu items, the
   Create button and text buttons are named by their visible text, so
-  `div-soup`'s names step only hurts controls named by
-  `aria-label`/`title`/`label for`. Their roles go in the roles step.
+  `div-soup` hurts them through their roles, not their names.
+- **`:disabled="false"` on a div is an attribute.** Vue renders it as
+  `disabled="false"`, and the app's `*[disabled]` rule then dims the element
+  and blocks clicks on it. `div-soup` binds `disabled` as `x || null`. The
+  create-dialog `evalState` caught this.
+- **`aria-disabled` is styling.** `[aria-disabled='true']` dims controls, so
+  removing the state changes pixels; `div-soup` uses the app's `.disabled`
+  class instead.
 - **`title` drives a cursor.** `inspector.scss` and `_legacy.scss` set
   `cursor: help` on `[title]` cells. Screenshots don't capture the cursor, so
   removing `title` keeps the pixel gate.
-- **`evalStates` setup selectors use classes that `div-soup` suffixes**
-  (`.c-create-button`, `.l-browse-bar__actions`). The pixel gate has to
-  resolve them before the suffix applies, or match on a prefix.
+- **`evalStates` setup selectors** avoid the `button` tag and the classes
+  `div-soup` suffixes (`.c-create-button--w > *`, `.l-browse-bar .icon-3-dots`,
+  `li:text-is(...)`), so they work at every tier.
+- **Open MCT never goes network-idle.** The CouchDB changes feed holds a
+  request open; `ax eval` waits for idle for 5 s at most and relies on its
+  settle loop.
+- **Live telemetry defeats a frozen page clock.** The generator runs in a
+  worker on the real clock. A 1 Hz plot drew a new segment at its right edge
+  between shots, a 1–16 px flake. So the fixture's Battery Temp emits one
+  point per 2.8 h, and its states use a fixed past window. The table view is
+  no better: its Wavelength column is random.
 - **The production bundle loads assets from the site root**, not `dist/`; see
   Build and serve.
 - **The built-in browser pane has no `SharedWorker`.** Open MCT's CouchDB
@@ -564,7 +557,3 @@ Running it against a tier, unchanged:
 - **Upstream's `AGENTS.md` asks for an `Assisted-by:` trailer.** That is for
   contributions to `nasa/openmct`; tier commits in `.work/` are local and
   don't carry it.
-- **Freeze time for screenshots.** The header clock, conductor bounds and
-  plots move every second. `page.clock.setFixedTime` freezes the page but not
-  the generator's worker. Plots of an unseeded generator matched anyway in
-  the shipped vs. names-only check; don't rely on that for `ax eval pixels`.

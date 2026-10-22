@@ -23,8 +23,8 @@ export interface EvalState {
   name: string;
   /** Path relative to the served URL. */
   path: string;
-  /** Selector clicked after load to reach the state (a menu, a dialog). */
-  setup?: string;
+  /** Selector clicked after load to reach the state (a menu, a dialog); a list is clicked in order. */
+  setup?: string | string[];
 }
 
 export interface Served {

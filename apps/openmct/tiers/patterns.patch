@@ -1,0 +1,984 @@
+diff --git a/src/api/forms/components/FormProperties.vue b/src/api/forms/components/FormProperties.vue
+index 1e4bdf3..da0c128 100644
+--- a/src/api/forms/components/FormProperties.vue
++++ b/src/api/forms/components/FormProperties.vue
+@@ -54,7 +54,9 @@
+         tabindex="0"
+         :disabled="isInvalid"
+         class="c-button c-button--major"
+-        aria-label="Save"
++        aria-label="Ok, Save"
++        aria-description="Saves these properties and closes the dialog."
++        data-testid="form-ok"
+         @click="onSave"
+       >
+         {{ submitLabel }}
+@@ -63,6 +65,7 @@
+         v-if="!shouldHideCancelButton"
+         tabindex="0"
+         class="c-button js-cancel-button"
++        data-testid="form-cancel"
+         aria-label="Cancel"
+         @click="onCancel"
+       >
+diff --git a/src/api/forms/components/FormRow.vue b/src/api/forms/components/FormRow.vue
+index ce1c88e..40c40f0 100644
+--- a/src/api/forms/components/FormRow.vue
++++ b/src/api/forms/components/FormRow.vue
+@@ -21,7 +21,12 @@
+ -->
+ 
+ <template>
+-  <div class="form-row c-form__row" :class="[{ first: first }, cssClass]" @on-change="onChange">
++  <div
++    class="form-row c-form__row"
++    :class="[{ first: first }, cssClass]"
++    :data-testid="`form-row-${row.key}`"
++    @on-change="onChange"
++  >
+     <label class="c-form-row__label" :title="row.description" :for="`form-${row.key}`">
+       {{ row.name }}
+     </label>
+diff --git a/src/api/forms/components/controls/TextAreaField.vue b/src/api/forms/components/controls/TextAreaField.vue
+index 98c93b9..d3cc73d 100644
+--- a/src/api/forms/components/controls/TextAreaField.vue
++++ b/src/api/forms/components/controls/TextAreaField.vue
+@@ -25,6 +25,7 @@
+     <span class="field control" :class="model.cssClass">
+       <textarea
+         :id="`${model.key}-textarea`"
++        :aria-label="model.name"
+         v-model="field"
+         type="text"
+         :size="model.size"
+diff --git a/src/api/menu/components/MenuComponent.vue b/src/api/menu/components/MenuComponent.vue
+index ae5d4d7..e81a958 100644
+--- a/src/api/menu/components/MenuComponent.vue
++++ b/src/api/menu/components/MenuComponent.vue
+@@ -20,7 +20,14 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div :aria-label="optionsLabel" class="c-menu" :class="options.menuClass" :style="styleObject">
++  <div
++    data-testid="menu"
++    :aria-label="optionsLabel"
++    class="c-menu"
++    :class="options.menuClass"
++    :style="styleObject"
++    @keydown="onMenuKeydown"
++  >
+     <ul v-if="options.actions.length && options.actions[0].length" role="menu">
+       <template v-for="(actionGroups, index) in options.actions" :key="index">
+         <div role="group">
+@@ -28,9 +35,11 @@
+             v-for="action in actionGroups"
+             :key="action.name"
+             role="menuitem"
++            tabindex="-1"
++            :aria-description="action.description"
++            :data-testid="`menu-item-${action.key ?? action.name}`"
+             :aria-disabled="action.isDisabled"
+             :aria-label="action.name"
+-            aria-describedby="item-description"
+             :class="action.cssClass"
+             :title="action.description"
+             @click="action.onItemClicked"
+@@ -55,7 +64,9 @@
+         v-for="action in options.actions"
+         :key="action.name"
+         role="menuitem"
+-        aria-describedby="item-description"
++        tabindex="-1"
++        :aria-description="action.description"
++        :data-testid="`menu-item-${action.key ?? action.name}`"
+         :aria-disabled="action.isDisabled"
+         :class="action.cssClass"
+         :aria-label="action.name"
+diff --git a/src/api/menu/components/SuperMenu.vue b/src/api/menu/components/SuperMenu.vue
+index cd8d72f..048d658 100644
+--- a/src/api/menu/components/SuperMenu.vue
++++ b/src/api/menu/components/SuperMenu.vue
+@@ -21,14 +21,17 @@
+ -->
+ <template>
+   <div
++    data-testid="menu"
+     :aria-label="optionsLabel"
+     class="c-menu"
+     :class="[options.menuClass, 'c-super-menu']"
+     :style="styleObject"
++    @keydown="onMenuKeydown"
+   >
+     <ul
+       v-if="options.actions.length && options.actions[0].length"
+       role="menu"
++      tabindex="0"
+       class="c-super-menu__menu"
+     >
+       <template v-for="(actionGroups, index) in options.actions" :key="index">
+@@ -37,11 +40,14 @@
+             v-for="action in actionGroups"
+             :key="action.name"
+             role="menuitem"
++            tabindex="-1"
++            :aria-description="action.description"
++            :data-testid="`menu-item-${action.key ?? action.name}`"
+             :aria-disabled="action.isDisabled"
+-            aria-describedby="item-description"
+             :class="action.cssClass"
+             @click="action.onItemClicked"
+             @mouseover="toggleItemDescription(action)"
++            @focus="$event.target.matches(':focus-visible') && toggleItemDescription(action)"
+             @mouseleave="toggleItemDescription()"
+           >
+             {{ action.name }}
+@@ -57,16 +63,19 @@
+       >
+     </ul>
+ 
+-    <ul v-else class="c-super-menu__menu" role="menu">
++    <ul v-else class="c-super-menu__menu" role="menu" tabindex="0">
+       <li
+         v-for="action in options.actions"
+         :key="action.name"
+         role="menuitem"
++        tabindex="-1"
++        :aria-description="action.description"
++        :data-testid="`menu-item-${action.key ?? action.name}`"
+         :class="action.cssClass"
+         :aria-label="action.name"
+-        aria-describedby="item-description"
+         @click="action.onItemClicked"
+         @mouseover="toggleItemDescription(action)"
++        @focus="$event.target.matches(':focus-visible') && toggleItemDescription(action)"
+         @mouseleave="toggleItemDescription()"
+       >
+         {{ action.name }}
+diff --git a/src/api/menu/mixins/popupMenuMixin.js b/src/api/menu/mixins/popupMenuMixin.js
+index 1788c1a..242e9d7 100644
+--- a/src/api/menu/mixins/popupMenuMixin.js
++++ b/src/api/menu/mixins/popupMenuMixin.js
+@@ -1,6 +1,36 @@
+ import { MENU_PLACEMENT } from '../menu.js';
+ export default {
+   methods: {
++    menuItems() {
++      return [...this.$el.querySelectorAll('[role="menuitem"]:not([aria-disabled="true"])')];
++    },
++    onMenuKeydown(event) {
++      const items = this.menuItems();
++      const index = items.indexOf(document.activeElement);
++      const opener = this.opener;
++      function move(to) {
++        items.at(to % items.length)?.focus();
++      }
++      function close() {
++        // Menu dismisses itself on any document click.
++        document.body.click();
++        opener?.focus?.();
++      }
++      const keys = {
++        ArrowDown: () => move(index + 1),
++        ArrowUp: () => move(index < 0 ? -1 : index - 1),
++        Home: () => move(0),
++        End: () => move(-1),
++        Enter: () => index >= 0 && (this.opener?.focus?.(), items[index].click()),
++        ' ': () => index >= 0 && (this.opener?.focus?.(), items[index].click()),
++        Escape: close,
++        Tab: close
++      };
++      if (keys[event.key]) {
++        event.preventDefault();
++        keys[event.key]();
++      }
++    },
+     /**
+      * @private
+      */
+@@ -88,10 +118,12 @@ export default {
+     }
+   },
+   mounted() {
++    this.opener = document.activeElement;
+     this.$nextTick(() => {
+       const position = this._calculatePopupPosition(this.$el);
+       this.top = position.y;
+       this.left = position.x;
++      this.menuItems()[0]?.focus();
+     });
+   },
+   data() {
+diff --git a/src/api/overlays/components/OverlayComponent.vue b/src/api/overlays/components/OverlayComponent.vue
+index 72941fd..43721fd 100644
+--- a/src/api/overlays/components/OverlayComponent.vue
++++ b/src/api/overlays/components/OverlayComponent.vue
+@@ -20,7 +20,14 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div class="c-overlay js-overlay" role="dialog" aria-modal="true" aria-label="Modal Overlay">
++  <div
++    class="c-overlay js-overlay"
++    role="dialog"
++    aria-modal="true"
++    aria-label="Modal Overlay"
++    data-testid="dialog"
++    @keydown.tab="trapFocus"
++  >
+     <div class="c-overlay__blocker" @click="destroy"></div>
+     <div class="c-overlay__outer">
+       <button
+@@ -51,6 +58,7 @@
+         </div>
+       </div>
+     </div>
++    <span :id="`${uid}-kind`" hidden>Modal Overlay</span>
+   </div>
+ </template>
+ 
+@@ -63,15 +71,55 @@ export default {
+       focusIndex: -1
+     };
+   },
++  created() {
++    this.uid = `overlay-${Math.random().toString(36).slice(2, 8)}`;
++  },
+   mounted() {
++    this.opener = document.activeElement;
+     const element = this.$refs.element;
+     element.appendChild(this.element);
++    // APG dialog: named by its visible title, plus "Modal Overlay" so the existing
++    // getByLabel('Modal Overlay') lookups still match. Some
++    // content (forms) renders its title after the overlay mounts, so watch for it.
++    this.titleObserver = new MutationObserver(() => this.labelByTitle());
++    this.titleObserver.observe(element, { childList: true, subtree: true });
++    this.labelByTitle();
+     const elementForFocus = this.getElementForFocus() || element;
+     this.$nextTick(() => {
+       elementForFocus.focus();
+     });
+   },
++  unmounted() {
++    this.titleObserver?.disconnect();
++    if (this.opener?.isConnected) {
++      this.opener.focus();
++    }
++  },
+   methods: {
++    labelByTitle() {
++      const title = this.$refs.element?.querySelector('.c-overlay__dialog-title');
++      if (title) {
++        title.id ||= `${this.uid}-title`;
++        this.$el.setAttribute('aria-labelledby', `${title.id} ${this.uid}-kind`);
++        this.titleObserver.disconnect();
++      }
++    },
++    trapFocus(event) {
++      const focusable = [
++        ...this.$el.querySelectorAll(
++          'button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
++        )
++      ].filter((el) => el.offsetParent !== null);
++      const first = focusable[0];
++      const last = focusable.at(-1);
++      if (event.shiftKey && document.activeElement === first) {
++        event.preventDefault();
++        last?.focus();
++      } else if (!event.shiftKey && document.activeElement === last) {
++        event.preventDefault();
++        first?.focus();
++      }
++    },
+     destroy() {
+       if (this.dismissible) {
+         this.dismiss();
+diff --git a/src/plugins/displayLayout/components/DisplayLayout.vue b/src/plugins/displayLayout/components/DisplayLayout.vue
+index fd5bdb3..9c2e1f9 100644
+--- a/src/plugins/displayLayout/components/DisplayLayout.vue
++++ b/src/plugins/displayLayout/components/DisplayLayout.vue
+@@ -28,6 +28,7 @@
+       'is-multi-selected': selectedLayoutItems.length > 1,
+       'allow-editing': isEditing
+     }"
++    role="group"
+     :aria-label="`${domainObject.name} Layout`"
+     @dragover="handleDragOver"
+     @click.capture="bypassSelection"
+diff --git a/src/plugins/flexibleLayout/components/ContainerComponent.vue b/src/plugins/flexibleLayout/components/ContainerComponent.vue
+index f216259..9de9304 100644
+--- a/src/plugins/flexibleLayout/components/ContainerComponent.vue
++++ b/src/plugins/flexibleLayout/components/ContainerComponent.vue
+@@ -31,11 +31,15 @@
+       v-show="isEditing"
+       class="c-fl-container__header"
+       draggable="true"
+-      role="columnheader"
+-      :aria-label="`Container Handle ${index + 1}`"
++      role="row"
+       @dragstart="startContainerDrag"
+     >
+-      <span class="c-fl-container__size-indicator">{{ sizeString }}</span>
++      <span
++        class="c-fl-container__size-indicator"
++        role="columnheader"
++        :aria-label="`Container Handle ${index + 1}`"
++        >{{ sizeString }}</span
++      >
+     </div>
+ 
+     <DropHint
+@@ -52,10 +56,10 @@
+           :frame="frame"
+           :index="i"
+           role="gridcell"
+-          :aria-label="`Container Frame ${index}`"
+           :container-index="index"
+           :is-editing="isEditing"
+           :object-path="objectPath"
++          @move-by-keyboard="moveFrameByKeyboard"
+         />
+ 
+         <DropHint
+@@ -171,6 +175,17 @@ export default {
+         return true;
+       }
+     },
++    // Keyboard alternative to dragging a frame. move-frame removes the frame, then inserts it
++    // after `toFrameIndex`.
++    moveFrameByKeyboard(frameIndex, step) {
++      const to = frameIndex + step;
++      if (to < 0 || to >= this.frames.length) {
++        return;
++      }
++
++      const toFrameIndex = step < 0 ? frameIndex - 2 : frameIndex;
++      this.$emit('move-frame', this.index, toFrameIndex, this.frames[frameIndex].id, this.index);
++    },
+     moveOrCreateNewFrame(insertIndex, event) {
+       if (event.dataTransfer.types.includes('openmct/domain-object-path')) {
+         this.$emit('new-frame', this.index, insertIndex);
+diff --git a/src/plugins/flexibleLayout/components/FrameComponent.vue b/src/plugins/flexibleLayout/components/FrameComponent.vue
+index 0164f77..a04bc16 100644
+--- a/src/plugins/flexibleLayout/components/FrameComponent.vue
++++ b/src/plugins/flexibleLayout/components/FrameComponent.vue
+@@ -33,7 +33,16 @@
+       :draggable="draggable"
+       :aria-label="frameLabel"
+       role="group"
++      :tabindex="isEditing ? 0 : undefined"
++      :aria-description="
++        isEditing
++          ? 'Drag to move it, or press Alt+Arrow Up or Alt+Arrow Down to move it up or down.'
++          : undefined
++      "
++      :data-testid="`fl-frame-${domainObject?.identifier?.key}`"
+       @dragstart="initDrag"
++      @keydown.alt.up.prevent="moveByKeyboard(-1)"
++      @keydown.alt.down.prevent="moveByKeyboard(1)"
+     >
+       <ObjectFrame
+         v-if="domainObject"
+@@ -85,6 +94,7 @@ export default {
+       required: true
+     }
+   },
++  emits: ['move-by-keyboard'],
+   data() {
+     return {
+       domainObject: undefined,
+@@ -158,6 +168,10 @@ export default {
+         }
+       });
+     },
++    moveByKeyboard(step) {
++      this.$emit('move-by-keyboard', this.index, step);
++      this.$nextTick(() => this.$refs.frame?.focus());
++    },
+     initDrag(event) {
+       let type = this.openmct.types.get(this.domainObject.type);
+       let iconClass = type.definition ? type.definition.cssClass : 'icon-object-unknown';
+diff --git a/src/plugins/folderView/components/GridItem.vue b/src/plugins/folderView/components/GridItem.vue
+index 67d78a0..628ccfc 100644
+--- a/src/plugins/folderView/components/GridItem.vue
++++ b/src/plugins/folderView/components/GridItem.vue
+@@ -23,6 +23,7 @@
+   <a
+     ref="root"
+     class="l-grid-view__item c-grid-item js-folder-child"
++    :data-testid="`grid-item-${item.model.name}`"
+     :class="[
+       {
+         'is-alias': item.isAlias === true,
+@@ -55,7 +56,7 @@
+       <div class="icon-people" title="Shared"></div>
+       <button
+         class="c-icon-button icon-info c-info-button"
+-        aria-label="More Info"
++        :aria-label="`More Info about ${item.model.name}`"
+         title="More Info"
+       ></button>
+       <div class="icon-pointer-right c-pointer-icon"></div>
+diff --git a/src/plugins/folderView/components/GridView.vue b/src/plugins/folderView/components/GridView.vue
+index 29ee9ee..beabe48 100644
+--- a/src/plugins/folderView/components/GridView.vue
++++ b/src/plugins/folderView/components/GridView.vue
+@@ -21,13 +21,15 @@
+ -->
+ <template>
+   <div class="l-grid-view" role="grid" :aria-label="`${domainObject.name} Grid View`">
+-    <GridItem
+-      v-for="(item, index) in items"
+-      :key="index"
+-      :item="item"
+-      :object-path="item.objectPath"
+-      role="gridcell"
+-    />
++    <div role="row" style="display: contents">
++      <GridItem
++        v-for="(item, index) in items"
++        :key="index"
++        :item="item"
++        :object-path="item.objectPath"
++        role="gridcell"
++      />
++    </div>
+   </div>
+ </template>
+ 
+diff --git a/src/plugins/inspectorViews/properties/DetailText.vue b/src/plugins/inspectorViews/properties/DetailText.vue
+index 2f9c057..0430ea9 100644
+--- a/src/plugins/inspectorViews/properties/DetailText.vue
++++ b/src/plugins/inspectorViews/properties/DetailText.vue
+@@ -21,7 +21,11 @@
+ -->
+ 
+ <template>
+-  <li class="c-inspect-properties__row" :aria-label="`${detail.name} inspector properties`">
++  <li
++    class="c-inspect-properties__row"
++    :data-testid="`property-${detail.name}`"
++    :aria-label="`${detail.name} inspector properties`"
++  >
+     <div class="c-inspect-properties__label" aria-label="inspector property name">
+       {{ detail.name }}
+     </div>
+diff --git a/src/plugins/plot/axis/XAxis.vue b/src/plugins/plot/axis/XAxis.vue
+index c32d21a..345a6b4 100644
+--- a/src/plugins/plot/axis/XAxis.vue
++++ b/src/plugins/plot/axis/XAxis.vue
+@@ -32,6 +32,7 @@
+       v-show="isEnabledXKeyToggle()"
+       v-model="selectedXKeyOptionKey"
+       class="gl-plot-x-label__select local-controls--hidden"
++      aria-label="X axis label"
+       @change="toggleXKeyOption()"
+     >
+       <option v-for="option in xKeyOptions" :key="option.key" :value="option.key">
+diff --git a/src/plugins/plot/axis/YAxis.vue b/src/plugins/plot/axis/YAxis.vue
+index da6855e..b592f37 100644
+--- a/src/plugins/plot/axis/YAxis.vue
++++ b/src/plugins/plot/axis/YAxis.vue
+@@ -48,6 +48,7 @@
+       v-if="yKeyOptions.length > 1 && singleSeries"
+       v-model="yAxisLabel"
+       class="gl-plot-y-label__select local-controls--hidden"
++      aria-label="Y axis label"
+       @change="toggleYAxisLabel"
+     >
+       <option
+diff --git a/src/plugins/timeConductor/ConductorAxis.vue b/src/plugins/timeConductor/ConductorAxis.vue
+index 6889737..b819bd6 100644
+--- a/src/plugins/timeConductor/ConductorAxis.vue
++++ b/src/plugins/timeConductor/ConductorAxis.vue
+@@ -22,6 +22,7 @@
+ <template>
+   <div
+     ref="axisHolder"
++    role="group"
+     aria-label="Time Conductor Axis"
+     class="c-conductor-axis"
+     @mousedown="dragStart($event)"
+diff --git a/src/plugins/timeConductor/ConductorClock.vue b/src/plugins/timeConductor/ConductorClock.vue
+index f4321ff..d276dba 100644
+--- a/src/plugins/timeConductor/ConductorClock.vue
++++ b/src/plugins/timeConductor/ConductorClock.vue
+@@ -25,7 +25,7 @@
+       <button
+         class="c-button--menu js-clock-button c-icon-button"
+         :class="selectedClock.cssClass"
+-        aria-label="Time Conductor Clock Menu"
++        :aria-label="`${selectedClock.name}, Time Conductor Clock Menu`"
+         @click.prevent.stop="showClocksMenu"
+       >
+         <span class="c-button__label">{{ selectedClock.name }}</span>
+diff --git a/src/plugins/timeConductor/ConductorMode.vue b/src/plugins/timeConductor/ConductorMode.vue
+index da631bc..2c2763b 100644
+--- a/src/plugins/timeConductor/ConductorMode.vue
++++ b/src/plugins/timeConductor/ConductorMode.vue
+@@ -25,7 +25,7 @@
+       <button
+         class="c-button--menu js-mode-button c-icon-button"
+         :class="selectedMode.cssClass"
+-        aria-label="Time Conductor Mode Menu"
++        :aria-label="`${selectedMode.name}, Time Conductor Mode Menu`"
+         @click.prevent.stop="showModesMenu"
+       >
+         <span class="c-button__label">{{ selectedMode.name }}</span>
+@@ -36,7 +36,7 @@
+     v-else
+     role="button"
+     class="c-compact-tc__setting-value__elem"
+-    aria-label="Time Conductor Mode"
++    :aria-label="`${selectedMode.name}, Time Conductor Mode`"
+   >
+     {{ selectedMode.name }}
+   </div>
+diff --git a/src/plugins/timeConductor/ConductorTimeSystem.vue b/src/plugins/timeConductor/ConductorTimeSystem.vue
+index 08225e9..d7ce1ea 100644
+--- a/src/plugins/timeConductor/ConductorTimeSystem.vue
++++ b/src/plugins/timeConductor/ConductorTimeSystem.vue
+@@ -27,7 +27,7 @@
+   >
+     <button
+       class="c-button--menu c-time-system-button c-icon-button"
+-      aria-label="Time Conductor Time System"
++      :aria-label="`${selectedTimeSystem.name}, Time Conductor Time System`"
+       @click.prevent.stop="showTimeSystemMenu"
+     >
+       <span class="c-button__label">{{ selectedTimeSystem.name }}</span>
+diff --git a/src/ui/components/ObjectFrame.vue b/src/ui/components/ObjectFrame.vue
+index 77ae1fc..a1281af 100644
+--- a/src/ui/components/ObjectFrame.vue
++++ b/src/ui/components/ObjectFrame.vue
+@@ -79,7 +79,7 @@
+             class="c-icon-button"
+             :class="item.cssClass"
+             :title="item.name"
+-            :aria-label="item.name"
++            :aria-label="`${item.name}: ${domainObject?.name}`"
+             @click="item.onItemClicked"
+           >
+             <span class="c-icon-button__label">{{ item.name }}</span>
+@@ -87,8 +87,9 @@
+         </div>
+         <button
+           class="c-icon-button icon-3-dots c-so-view__frame-controls__more"
+-          aria-label="View menu items"
++          :aria-label="`View menu items for ${domainObject?.name}`"
+           title="View menu items"
++          aria-haspopup="menu"
+           @click.prevent.stop="showMenuItems($event)"
+         ></button>
+       </div>
+diff --git a/src/ui/components/ObjectPath.vue b/src/ui/components/ObjectPath.vue
+index 0e4791a..9e19e57 100644
+--- a/src/ui/components/ObjectPath.vue
++++ b/src/ui/components/ObjectPath.vue
+@@ -27,7 +27,12 @@
+     :aria-label="`${domainObject.name}`"
+     role="navigation"
+   >
+-    <li v-for="pathObject in orderedPath" :key="pathObject.key" class="c-location__item">
++    <li
++      v-for="pathObject in orderedPath"
++      role="none"
++      :key="pathObject.key"
++      class="c-location__item"
++    >
+       <ObjectLabel
+         :domain-object="pathObject.domainObject"
+         :object-path="pathObject.objectPath"
+diff --git a/src/ui/components/ToggleSwitch.vue b/src/ui/components/ToggleSwitch.vue
+index f8c0a85..4f862b2 100644
+--- a/src/ui/components/ToggleSwitch.vue
++++ b/src/ui/components/ToggleSwitch.vue
+@@ -23,7 +23,13 @@
+   <div class="c-toggle-switch">
+     <label class="c-toggle-switch__control">
+       <input type="checkbox" :checked="checked" @change="onUserSelect($event)" />
+-      <span :id="id" class="c-toggle-switch__slider" role="switch" :aria-label="name"></span>
++      <span
++        :id="id"
++        class="c-toggle-switch__slider"
++        role="switch"
++        :aria-label="name"
++        :aria-checked="checked ? 'true' : 'false'"
++      ></span>
+     </label>
+     <div v-if="label && label.length" class="c-toggle-switch__label">
+       {{ label }}
+diff --git a/src/ui/inspector/InspectorTabs.vue b/src/ui/inspector/InspectorTabs.vue
+index ce2e0b9..94fd1fa 100644
+--- a/src/ui/inspector/InspectorTabs.vue
++++ b/src/ui/inspector/InspectorTabs.vue
+@@ -24,14 +24,20 @@
+   <div class="c-inspector__tabs c-tabs" role="tablist">
+     <div
+       v-for="tab in visibleTabs"
++      :id="`inspector-tab-${tab.key}`"
+       :key="tab.key"
+       role="tab"
+       class="c-inspector__tab c-tab"
+       :class="{ 'is-current': isSelected(tab) }"
+-      tabindex="0"
++      :tabindex="isSelected(tab) ? 0 : -1"
++      :aria-selected="isSelected(tab) ? 'true' : 'false'"
++      aria-controls="inspector-tabpanel"
+       :title="tab.name"
++      :data-testid="`inspector-tab-${tab.key}`"
+       @click="selectTab(tab)"
+       @keydown.enter="selectTab(tab)"
++      @keydown.left.prevent="selectAdjacentTab(tab, -1)"
++      @keydown.right.prevent="selectAdjacentTab(tab, 1)"
+     >
+       <span class="c-inspector__tab-name c-tab__name">{{ tab.name }}</span>
+     </div>
+@@ -101,6 +107,13 @@ export default {
+         this.selectTab(this.visibleTabs[0]);
+       }
+     },
++    // APG tabs: arrows move and select (automatic activation), wrapping at the ends.
++    selectAdjacentTab(tab, step) {
++      const tabs = this.visibleTabs;
++      const next = tabs.at((tabs.findIndex((other) => other.key === tab.key) + step) % tabs.length);
++      this.selectTab(next);
++      this.$nextTick(() => document.getElementById(`inspector-tab-${next.key}`)?.focus());
++    },
+     isSelected(tab) {
+       return this.selectedTab?.key === tab.key;
+     },
+diff --git a/src/ui/inspector/InspectorViews.vue b/src/ui/inspector/InspectorViews.vue
+index d9e0921..894ecee 100644
+--- a/src/ui/inspector/InspectorViews.vue
++++ b/src/ui/inspector/InspectorViews.vue
+@@ -21,7 +21,12 @@
+ -->
+ 
+ <template>
+-  <div class="c-inspector__content" role="tabpanel" aria-label="Inspector Views"></div>
++  <div
++    id="inspector-tabpanel"
++    class="c-inspector__content"
++    role="tabpanel"
++    aria-label="Inspector Views"
++  ></div>
+ </template>
+ 
+ <script>
+diff --git a/src/ui/layout/BrowseBar.vue b/src/ui/layout/BrowseBar.vue
+index d1fba97..c7c9548 100644
+--- a/src/ui/layout/BrowseBar.vue
++++ b/src/ui/layout/BrowseBar.vue
+@@ -25,6 +25,8 @@
+       <button
+         v-if="hasParent"
+         aria-label="Navigate up to parent"
++        :aria-description="`Opens the folder that contains ${domainObject?.name}.`"
++        data-testid="navigate-up-button"
+         class="l-browse-bar__nav-to-parent-button c-icon-button c-icon-button--major icon-arrow-nav-to-parent"
+         title="Navigate up to parent"
+         @click="goToParent"
+@@ -102,6 +104,8 @@
+           class="l-browse-bar__actions__edit c-button c-button--major icon-pencil"
+           title="Edit Object"
+           aria-label="Edit Object"
++          :aria-description="`Enters edit mode for ${domainObject?.name}, to rearrange or add contents. Finish with Save.`"
++          data-testid="edit-button"
+           @click="edit()"
+         ></button>
+ 
+@@ -113,17 +117,31 @@
+             class="c-button--menu c-button--major icon-save"
+             title="Save"
+             aria-label="Save"
++            :aria-expanded="showSaveMenu ? 'true' : 'false'"
++            aria-controls="browse-bar-save-options"
++            aria-description="Shows the save options: Save and Finish Editing, or Save and Continue Editing."
++            data-testid="save-button"
+             @click.stop="toggleSaveMenu"
+           ></button>
+-          <div v-show="showSaveMenu" class="c-menu">
++          <div v-show="showSaveMenu" id="browse-bar-save-options" class="c-menu">
+             <ul>
+-              <li class="icon-save" title="Save and Finish Editing" @click="saveAndFinishEditing">
++              <li
++                class="icon-save"
++                title="Save and Finish Editing"
++                tabindex="0"
++                data-testid="save-and-finish-editing"
++                @click="saveAndFinishEditing"
++                @keydown.enter.space.prevent="saveAndFinishEditing"
++              >
+                 Save and Finish Editing
+               </li>
+               <li
+                 class="icon-save"
+                 title="Save and Continue Editing"
++                tabindex="0"
++                data-testid="save-and-continue-editing"
+                 @click="saveAndContinueEditing"
++                @keydown.enter.space.prevent="saveAndContinueEditing"
+               >
+                 Save and Continue Editing
+               </li>
+@@ -135,6 +153,8 @@
+           v-if="isEditing"
+           class="l-browse-bar__actions c-button icon-x"
+           aria-label="Cancel Editing"
++          aria-description="Leaves edit mode and discards unsaved changes, after a confirmation."
++          data-testid="cancel-editing-button"
+           title="Cancel Editing"
+           @click="promptUserandCancelEditing()"
+         ></button>
+@@ -142,6 +162,10 @@
+           class="l-browse-bar__actions c-icon-button icon-3-dots"
+           title="More actions"
+           aria-label="More actions"
++          aria-haspopup="menu"
++          :aria-expanded="actionsMenuOpen ? 'true' : 'false'"
++          :aria-description="`Actions for ${domainObject?.name}, including Edit Properties... to rename it or change its settings.`"
++          data-testid="more-actions-button"
+           @click.prevent.stop="showMenuItems($event)"
+         ></button>
+       </div>
+@@ -182,6 +206,7 @@ export default {
+       notebookTypes: [],
+       showViewMenu: false,
+       showSaveMenu: false,
++      actionsMenuOpen: false,
+       domainObject: undefined,
+       viewKey: undefined,
+       isEditing: this.openmct.editor.isEditing(),
+@@ -466,7 +491,10 @@ export default {
+         this.actionCollection.objectPath,
+         this.actionCollection.view
+       );
+-      this.openmct.menus.showMenu(event.x, event.y, menuItems);
++      this.actionsMenuOpen = true;
++      this.openmct.menus.showMenu(event.x, event.y, menuItems, {
++        onDestroy: () => (this.actionsMenuOpen = false)
++      });
+     },
+     unlistenToActionCollection() {
+       this.actionCollection.off('update', this.updateActionItems);
+diff --git a/src/ui/layout/CreateButton.vue b/src/ui/layout/CreateButton.vue
+index 5c22ce0..0f40e07 100644
+--- a/src/ui/layout/CreateButton.vue
++++ b/src/ui/layout/CreateButton.vue
+@@ -25,6 +25,10 @@
+       class="c-create-button c-button--menu c-button--major icon-plus"
+       :aria-disabled="isEditing"
+       aria-labelledby="create-button-label"
++      aria-haspopup="menu"
++      :aria-expanded="menuOpen ? 'true' : 'false'"
++      aria-description="Opens a menu of object types. The new object's name and the folder it is saved in are set in the dialog that follows."
++      data-testid="create-button"
+       @click.prevent.stop="showCreateMenu"
+     >
+       <span id="create-button-label" class="c-button__label">Create</span>
+@@ -41,7 +45,8 @@ export default {
+       menuItems: {},
+       isEditing: this.openmct.editor.isEditing(),
+       selectedMenuItem: {},
+-      opened: false
++      opened: false,
++      menuOpen: false
+     };
+   },
+   computed: {
+@@ -92,8 +97,10 @@ export default {
+       const y = elementBoundingClientRect.y + elementBoundingClientRect.height;
+ 
+       const menuOptions = {
+-        menuClass: 'c-create-menu'
++        menuClass: 'c-create-menu',
++        onDestroy: () => (this.menuOpen = false)
+       };
++      this.menuOpen = true;
+ 
+       this.openmct.menus.showSuperMenu(x, y, this.sortedItems, menuOptions);
+     },
+diff --git a/src/ui/layout/MctTree.vue b/src/ui/layout/MctTree.vue
+index cc1d349..f4e334f 100644
+--- a/src/ui/layout/MctTree.vue
++++ b/src/ui/layout/MctTree.vue
+@@ -55,7 +55,10 @@
+       class="c-tree-and-search__tree c-tree"
+       role="tree"
+       :aria-label="getAriaLabel"
+-      aria-expanded="true"
++      :aria-description="treeDescription"
++      tabindex="0"
++      @focus="focusTreeItem"
++      @keydown="treeKeydown"
+     >
+       <div
+         ref="dummyItem"
+@@ -193,6 +196,9 @@ export default {
+     focusedItems() {
+       return this.activeSearch ? this.searchResultItems : this.treeItems;
+     },
++    treeDescription() {
++      return 'Arrow keys move between items, Right expands, Left collapses, Enter opens the item.';
++    },
+     getAriaLabel() {
+       return this.isSelectorTree ? 'Create Modal Tree' : 'Main Tree';
+     },
+@@ -320,6 +326,54 @@ export default {
+       // will need to listen for root composition changes as well
+       this.treeItems = await this.loadAndBuildTreeItemsFor(root.identifier, []);
+     },
++    renderedTreeItems() {
++      return [...this.$refs.scrollable.querySelectorAll('[role="treeitem"]')];
++    },
++    // APG tree view: the tree takes focus once, then hands it to the selected (or first) item.
++    focusTreeItem(event) {
++      if (event.target !== this.$refs.mainTree) {
++        return;
++      }
++
++      const items = this.renderedTreeItems();
++      (items.find((item) => item.getAttribute('aria-selected') === 'true') ?? items[0])?.focus();
++    },
++    treeKeydown(event) {
++      const items = this.renderedTreeItems();
++      const index = items.indexOf(document.activeElement);
++      if (index < 0) {
++        return;
++      }
++
++      const item = items[index];
++      const level = Number(item.getAttribute('aria-level'));
++      const expanded = item.getAttribute('aria-expanded');
++      function toggle() {
++        item.querySelector('.c-tree__item__view-control')?.click();
++      }
++      const keys = {
++        ArrowDown: () => items[index + 1]?.focus(),
++        ArrowUp: () => items[index - 1]?.focus(),
++        Home: () => items[0]?.focus(),
++        End: () => items.at(-1)?.focus(),
++        ArrowRight: () =>
++          expanded === 'false' ? toggle() : expanded === 'true' && items[index + 1]?.focus(),
++        ArrowLeft: () =>
++          expanded === 'true'
++            ? toggle()
++            : items
++                .slice(0, index)
++                .reverse()
++                .find((other) => Number(other.getAttribute('aria-level')) < level)
++                ?.focus(),
++        Enter: () => item.querySelector('.c-tree__item')?.click(),
++        ' ': () => item.querySelector('.c-tree__item')?.click()
++      };
++      if (keys[event.key]) {
++        event.preventDefault();
++        keys[event.key]();
++      }
++    },
+     treeItemAction(parentItem, type) {
+       if (type === 'close') {
+         this.closeTreeItem(parentItem);
+diff --git a/src/ui/layout/PaneContainer.vue b/src/ui/layout/PaneContainer.vue
+index 06960ec..a183f0a 100644
+--- a/src/ui/layout/PaneContainer.vue
++++ b/src/ui/layout/PaneContainer.vue
+@@ -24,8 +24,8 @@
+     <div
+       v-if="handle"
+       class="l-pane__handle"
++      role="separator"
+       :aria-label="handleLabel"
+-      :aria-grabbed="resizing"
+       @mousedown.prevent="startResizing"
+     ></div>
+     <div class="l-pane__header">
+diff --git a/src/ui/layout/ResizeHandle/ResizeHandle.vue b/src/ui/layout/ResizeHandle/ResizeHandle.vue
+index 97b2326..21f60e0 100644
+--- a/src/ui/layout/ResizeHandle/ResizeHandle.vue
++++ b/src/ui/layout/ResizeHandle/ResizeHandle.vue
+@@ -25,7 +25,6 @@
+     v-show="isEditing && !isDragging"
+     class="c-fl-frame__resize-handle"
+     :class="[dragOrientation]"
+-    :aria-grabbed="isGrabbed"
+     @mousedown="mousedown"
+   ></div>
+ </template>
+diff --git a/src/ui/layout/TreeItem.vue b/src/ui/layout/TreeItem.vue
+index 5104d9c..cc00af9 100644
+--- a/src/ui/layout/TreeItem.vue
++++ b/src/ui/layout/TreeItem.vue
+@@ -21,8 +21,14 @@
+ -->
+ <template>
+   <div
++    :id="treeItemId"
+     class="c-tree__item-h"
+     role="treeitem"
++    tabindex="-1"
++    :aria-level="node.objectPath.length"
++    :aria-selected="shouldHighlight ? 'true' : 'false'"
++    :aria-description="treeItemDescription"
++    :data-testid="`${isSelectorTree ? 'locator-tree' : 'tree'}-item:${navigationPath}`"
+     :style="treeItemStyles"
+     :aria-expanded="
+       !activeSearch && hasComposition ? (isOpen || isLoading ? 'true' : 'false') : undefined
+@@ -174,6 +180,20 @@ export default {
+         return this.navigated;
+       }
+     },
++    treeItemId() {
++      return `${this.isSelectorTree ? 'locator-tree' : 'tree'}-item${this.navigationPath.replaceAll('/', '-')}`;
++    },
++    // Agent hint: the type and the folder path, which tells same-named objects apart.
++    treeItemDescription() {
++      const type =
++        this.openmct.types.get(this.node.object.type)?.definition?.name ?? this.node.object.type;
++      const parents = this.node.objectPath
++        .slice(1, -1)
++        .map((object) => object.name)
++        .reverse();
++
++      return parents.length ? `${type} in ${parents.join(' / ')}` : type;
++    },
+     treeItemStyles() {
+       let itemTop = (this.itemOffset + this.itemIndex) * this.itemHeight + 'px';
+ 
+diff --git a/src/ui/layout/ViewSwitcher.vue b/src/ui/layout/ViewSwitcher.vue
+index 0c62325..3eb34bf 100644
+--- a/src/ui/layout/ViewSwitcher.vue
++++ b/src/ui/layout/ViewSwitcher.vue
+@@ -28,7 +28,10 @@
+       class="c-icon-button c-button--menu"
+       :class="currentView.cssClass"
+       :title="viewSwitcherLabel"
+-      :aria-label="viewSwitcherLabel"
++      :aria-label="`${currentView.name}, ${viewSwitcherLabel}`"
++      aria-haspopup="menu"
++      :aria-expanded="menuOpen ? 'true' : 'false'"
++      data-testid="view-switcher-button"
+       @click.prevent.stop="showMenu"
+     >
+       <span class="c-icon-button__label">
+@@ -52,6 +55,9 @@ export default {
+     }
+   },
+   emits: ['set-view'],
++  data() {
++    return { menuOpen: false };
++  },
+   computed: {
+     viewSwitcherLabel() {
+       return 'Open the View Switcher Menu';
+@@ -66,7 +72,8 @@ export default {
+       const x = elementBoundingClientRect.x;
+       const y = elementBoundingClientRect.y + elementBoundingClientRect.height;
+ 
+-      this.openmct.menus.showMenu(x, y, this.views);
++      this.menuOpen = true;
++      this.openmct.menus.showMenu(x, y, this.views, { onDestroy: () => (this.menuOpen = false) });
+     }
+   }
+ };

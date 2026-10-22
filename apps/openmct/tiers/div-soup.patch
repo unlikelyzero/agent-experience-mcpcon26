@@ -1,8 +1,49 @@
+diff --git a/.webpack/webpack.common.mjs b/.webpack/webpack.common.mjs
+index 60fa05d..22b1c2b 100644
+--- a/.webpack/webpack.common.mjs
++++ b/.webpack/webpack.common.mjs
+@@ -32,6 +32,28 @@ try {
+ 
+ const projectRootDir = fileURLToPath(new URL('../', import.meta.url));
+ 
++// div-soup: key class names get a random suffix per build, in the emitted JS and CSS alike, so
++// selectors written against one build miss the next. Only whole class tokens are renamed.
++const SUFFIXED_CLASSES = ['c-tree__item', 'c-tree__item-h', 'c-create-button', 'c-menu', 'c-super-menu', 'c-overlay',
++  'c-fl-frame', 'c-grid-item', 'c-inspector__tab', 'l-browse-bar__actions'];
++const classSuffix = Math.random().toString(36).slice(2, 7);
++class SuffixClassesPlugin {
++  apply(compiler) {
++    compiler.hooks.thisCompilation.tap('SuffixClassesPlugin', (compilation) => {
++      compilation.hooks.processAssets.tap(
++        { name: 'SuffixClassesPlugin', stage: webpack.Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE },
++        (assets) => {
++          const token = new RegExp(`(?<![-\\w])(${SUFFIXED_CLASSES.join('|')})(?![-\\w])`, 'g');
++          for (const name of Object.keys(assets).filter((n) => /\.(js|css)$/.test(n))) {
++            const source = assets[name].source().toString();
++            compilation.updateAsset(name, new webpack.sources.RawSource(source.replace(token, `$1-${classSuffix}`)));
++          }
++        }
++      );
++    });
++  }
++}
++
+ /** @type {import('webpack').Configuration} */
+ const config = {
+   context: projectRootDir,
+@@ -97,6 +119,7 @@ const config = {
+       __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false, // enable/disable hydration mismatch details in production, default: false
+     }),
+     new VueLoaderPlugin(),
++    new SuffixClassesPlugin(),
+     new CopyWebpackPlugin({
+       patterns: [
+         {
 diff --git a/src/api/forms/components/FormProperties.vue b/src/api/forms/components/FormProperties.vue
-index 1e4bdf3..68f8c5a 100644
+index 1e4bdf3..b8b73af 100644
 --- a/src/api/forms/components/FormProperties.vue
 +++ b/src/api/forms/components/FormProperties.vue
-@@ -50,20 +50,13 @@
+@@ -50,24 +50,20 @@
      </form>
  
      <div class="mct-form__controls c-overlay__button-bar c-form__bottom-bar">
@@ -12,18 +53,29 @@ index 1e4bdf3..68f8c5a 100644
 -        class="c-button c-button--major"
 -        aria-label="Save"
 -        @click="onSave"
--      >
-+      <button tabindex="0" :disabled="isInvalid" class="c-button c-button--major" @click="onSave">
++      <div
++        :disabled="isInvalid || null"
++        class="c-button c-button--major ax-btn"
++        @click="isInvalid || onSave()"
+       >
          {{ submitLabel }}
-       </button>
-       <button
+-      </button>
+-      <button
++      </div>
++      <div
          v-if="!shouldHideCancelButton"
-         tabindex="0"
-         class="c-button js-cancel-button"
+-        tabindex="0"
+-        class="c-button js-cancel-button"
 -        aria-label="Cancel"
++        class="c-button js-cancel-button ax-btn"
          @click="onCancel"
        >
          {{ cancelLabel }}
+-      </button>
++      </div>
+     </div>
+   </div>
+ </template>
 diff --git a/src/api/forms/components/FormRow.vue b/src/api/forms/components/FormRow.vue
 index ce1c88e..0bb8d30 100644
 --- a/src/api/forms/components/FormRow.vue
@@ -62,43 +114,79 @@ index 38c5f18..958e23c 100644
      >
        <option v-for="option in model.options" :key="option.name" :value="option.value">
 diff --git a/src/api/menu/components/MenuComponent.vue b/src/api/menu/components/MenuComponent.vue
-index ae5d4d7..55629c3 100644
+index ae5d4d7..9ad756c 100644
 --- a/src/api/menu/components/MenuComponent.vue
 +++ b/src/api/menu/components/MenuComponent.vue
-@@ -20,7 +20,7 @@
+@@ -20,19 +20,15 @@
   at runtime from the About dialog for additional information.
  -->
  <template>
 -  <div :aria-label="optionsLabel" class="c-menu" :class="options.menuClass" :style="styleObject">
+-    <ul v-if="options.actions.length && options.actions[0].length" role="menu">
 +  <div class="c-menu" :class="options.menuClass" :style="styleObject">
-     <ul v-if="options.actions.length && options.actions[0].length" role="menu">
++    <ul role="none" v-if="options.actions.length && options.actions[0].length">
        <template v-for="(actionGroups, index) in options.actions" :key="index">
-         <div role="group">
-@@ -29,10 +29,8 @@
+-        <div role="group">
++        <div>
+           <li
++            role="none"
+             v-for="action in actionGroups"
              :key="action.name"
-             role="menuitem"
-             :aria-disabled="action.isDisabled"
+-            role="menuitem"
+-            :aria-disabled="action.isDisabled"
 -            :aria-label="action.name"
-             aria-describedby="item-description"
-             :class="action.cssClass"
+-            aria-describedby="item-description"
+-            :class="action.cssClass"
 -            :title="action.description"
++            :class="[action.cssClass, { disabled: action.isDisabled }]"
              @click="action.onItemClicked"
              @mouseover="toggleItem(action)"
              @mouseleave="toggleItem()"
-@@ -58,8 +56,6 @@
-         aria-describedby="item-description"
-         :aria-disabled="action.isDisabled"
-         :class="action.cssClass"
+@@ -42,33 +38,28 @@
+           <div
+             v-if="index !== options.actions.length - 1"
+             :key="index"
+-            role="separator"
+             class="c-menu__section-separator"
+           ></div>
+-          <li v-if="actionGroups.length === 0" :key="index">No actions defined.</li>
++          <li role="none" v-if="actionGroups.length === 0" :key="index">No actions defined.</li>
+         </div>
+       </template>
+     </ul>
+ 
+-    <ul v-else role="menu">
++    <ul role="none" v-else>
+       <li
++        role="none"
+         v-for="action in options.actions"
+         :key="action.name"
+-        role="menuitem"
+-        aria-describedby="item-description"
+-        :aria-disabled="action.isDisabled"
+-        :class="action.cssClass"
 -        :aria-label="action.name"
 -        :title="action.description"
++        :class="[action.cssClass, { disabled: action.isDisabled }]"
          @click="action.onItemClicked"
          @mouseover="toggleItem(action)"
          @mouseleave="toggleItem()"
+       >
+         {{ action.name }}
+       </li>
+-      <li v-if="options.actions.length === 0">No actions defined.</li>
++      <li role="none" v-if="options.actions.length === 0">No actions defined.</li>
+     </ul>
+-    <div v-if="hoveredItem" id="item-description" class="visually-hidden" aria-live="polite">
++    <div v-if="hoveredItem" id="item-description" class="visually-hidden">
+       <span v-if="hoveredItem.name">{{ hoveredItem.name }}</span>
+       <span v-if="hoveredItem.description">: {{ hoveredItem.description }}</span>
+     </div>
 diff --git a/src/api/menu/components/SuperMenu.vue b/src/api/menu/components/SuperMenu.vue
-index cd8d72f..189f699 100644
+index cd8d72f..0b27670 100644
 --- a/src/api/menu/components/SuperMenu.vue
 +++ b/src/api/menu/components/SuperMenu.vue
-@@ -20,12 +20,7 @@
+@@ -20,26 +20,19 @@
   at runtime from the About dialog for additional information.
  -->
  <template>
@@ -110,66 +198,211 @@ index cd8d72f..189f699 100644
 -  >
 +  <div class="c-menu" :class="[options.menuClass, 'c-super-menu']" :style="styleObject">
      <ul
++      role="none"
        v-if="options.actions.length && options.actions[0].length"
-       role="menu"
-@@ -63,7 +58,6 @@
+-      role="menu"
+       class="c-super-menu__menu"
+     >
+       <template v-for="(actionGroups, index) in options.actions" :key="index">
+-        <div role="group">
++        <div>
+           <li
++            role="none"
+             v-for="action in actionGroups"
+             :key="action.name"
+-            role="menuitem"
+-            :aria-disabled="action.isDisabled"
+-            aria-describedby="item-description"
+-            :class="action.cssClass"
++            :class="[action.cssClass, { disabled: action.isDisabled }]"
+             @click="action.onItemClicked"
+             @mouseover="toggleItemDescription(action)"
+             @mouseleave="toggleItemDescription()"
+@@ -49,32 +42,29 @@
+           <div
+             v-if="index !== options.actions.length - 1"
+             :key="index"
+-            role="separator"
+             class="c-menu__section-separator"
+           ></div>
+-          <li v-if="actionGroups.length === 0" :key="index">No actions defined.</li>
++          <li role="none" v-if="actionGroups.length === 0" :key="index">No actions defined.</li>
+         </div></template
+       >
+     </ul>
+ 
+-    <ul v-else class="c-super-menu__menu" role="menu">
++    <ul role="none" v-else class="c-super-menu__menu">
+       <li
++        role="none"
+         v-for="action in options.actions"
          :key="action.name"
-         role="menuitem"
+-        role="menuitem"
          :class="action.cssClass"
 -        :aria-label="action.name"
-         aria-describedby="item-description"
+-        aria-describedby="item-description"
          @click="action.onItemClicked"
          @mouseover="toggleItemDescription(action)"
+         @mouseleave="toggleItemDescription()"
+       >
+         {{ action.name }}
+       </li>
+-      <li v-if="options.actions.length === 0">No actions defined.</li>
++      <li role="none" v-if="options.actions.length === 0">No actions defined.</li>
+     </ul>
+ 
+-    <div aria-live="polite" class="c-super-menu__item-description">
++    <div class="c-super-menu__item-description">
+       <div :class="itemDescriptionIconClass"></div>
+       <div class="l-item-description__name">
+         {{ hoveredItemName }}
 diff --git a/src/api/overlays/components/OverlayComponent.vue b/src/api/overlays/components/OverlayComponent.vue
-index 72941fd..9fc890a 100644
+index 72941fd..8f1521e 100644
 --- a/src/api/overlays/components/OverlayComponent.vue
 +++ b/src/api/overlays/components/OverlayComponent.vue
-@@ -20,12 +20,11 @@
+@@ -20,34 +20,28 @@
   at runtime from the About dialog for additional information.
  -->
  <template>
 -  <div class="c-overlay js-overlay" role="dialog" aria-modal="true" aria-label="Modal Overlay">
-+  <div class="c-overlay js-overlay" role="dialog" aria-modal="true">
++  <div class="c-overlay js-overlay">
      <div class="c-overlay__blocker" @click="destroy"></div>
      <div class="c-overlay__outer">
-       <button
+-      <button
++      <div
          v-if="dismissible"
 -        aria-label="Close"
-         class="c-click-icon c-overlay__close-button icon-x"
+-        class="c-click-icon c-overlay__close-button icon-x"
++        class="c-click-icon c-overlay__close-button icon-x ax-btn"
          @click.stop="destroy"
-       ></button>
+-      ></button>
++      ></div>
+       <div class="c-overlay__content-wrapper">
+-        <div
+-          ref="element"
+-          class="c-overlay__contents js-notebook-snapshot-item-wrapper"
+-          tabindex="0"
+-        ></div>
++        <div ref="element" class="c-overlay__contents js-notebook-snapshot-item-wrapper"></div>
+         <div v-if="buttons" class="c-overlay__button-bar">
+-          <button
++          <div
+             v-for="(button, index) in buttons"
+             ref="buttons"
+             :key="index"
+-            class="c-button js-overlay__button"
+-            tabindex="0"
++            class="c-button js-overlay__button ax-btn"
+             :class="{ 'c-button--major': focusIndex === index }"
+             @focus="focusIndex = index"
+             @click="buttonClickHandler(button.callback)"
+           >
+             {{ button.label }}
+-          </button>
++          </div>
+         </div>
+       </div>
+     </div>
 diff --git a/src/plugins/flexibleLayout/components/ContainerComponent.vue b/src/plugins/flexibleLayout/components/ContainerComponent.vue
-index f216259..5cb3b85 100644
+index f216259..c9df03e 100644
 --- a/src/plugins/flexibleLayout/components/ContainerComponent.vue
 +++ b/src/plugins/flexibleLayout/components/ContainerComponent.vue
-@@ -32,7 +32,6 @@
+@@ -25,14 +25,11 @@
+     class="c-fl-container"
+     :style="[{ 'flex-basis': sizeString }]"
+     :class="{ 'is-empty': !frames.length }"
+-    role="grid"
+   >
+     <div
+       v-show="isEditing"
        class="c-fl-container__header"
        draggable="true"
-       role="columnheader"
+-      role="columnheader"
 -      :aria-label="`Container Handle ${index + 1}`"
        @dragstart="startContainerDrag"
      >
        <span class="c-fl-container__size-indicator">{{ sizeString }}</span>
-@@ -52,7 +51,6 @@
+@@ -45,14 +42,12 @@
+       @object-drop-to="moveOrCreateNewFrame"
+     />
+ 
+-    <div role="row" class="c-fl-container__frames-holder" :class="flexLayoutCssClass">
++    <div class="c-fl-container__frames-holder" :class="flexLayoutCssClass">
+       <template v-for="(frame, i) in frames" :key="frame.id">
+         <FrameComponent
+           class="c-fl-container__frame"
            :frame="frame"
            :index="i"
-           role="gridcell"
+-          role="gridcell"
 -          :aria-label="`Container Frame ${index}`"
            :container-index="index"
            :is-editing="isEditing"
            :object-path="objectPath"
 diff --git a/src/plugins/flexibleLayout/components/FrameComponent.vue b/src/plugins/flexibleLayout/components/FrameComponent.vue
-index 0164f77..951d145 100644
+index 0164f77..a1c3da3 100644
 --- a/src/plugins/flexibleLayout/components/FrameComponent.vue
 +++ b/src/plugins/flexibleLayout/components/FrameComponent.vue
-@@ -31,7 +31,6 @@
+@@ -31,8 +31,6 @@
        ref="frame"
        class="c-frame c-fl-frame__drag-wrapper is-selectable u-inspectable is-moveable"
        :draggable="draggable"
 -      :aria-label="frameLabel"
-       role="group"
+-      role="group"
        @dragstart="initDrag"
      >
+       <ObjectFrame
+diff --git a/src/plugins/folderView/components/GridItem.vue b/src/plugins/folderView/components/GridItem.vue
+index 67d78a0..2884c35 100644
+--- a/src/plugins/folderView/components/GridItem.vue
++++ b/src/plugins/folderView/components/GridItem.vue
+@@ -41,23 +41,15 @@
+     ></div>
+     <div class="c-grid-item__details">
+       <!-- Name and metadata -->
+-      <div class="c-grid-item__name" :title="item.model.name">{{ item.model.name }}</div>
+-      <div class="c-grid-item__metadata" :aria-label="item.type.name" :title="item.type.name">
++      <div class="c-grid-item__name">{{ item.model.name }}</div>
++      <div class="c-grid-item__metadata">
+         <span class="c-grid-item__metadata__type">{{ item.type.name }}</span>
+       </div>
+     </div>
+     <div class="c-grid-item__controls">
+-      <div
+-        class="is-status__indicator"
+-        :aria-label="`This item is ${status}`"
+-        :title="`This item is ${status}`"
+-      ></div>
+-      <div class="icon-people" title="Shared"></div>
+-      <button
+-        class="c-icon-button icon-info c-info-button"
+-        aria-label="More Info"
+-        title="More Info"
+-      ></button>
++      <div class="is-status__indicator"></div>
++      <div class="icon-people"></div>
++      <div class="c-icon-button icon-info c-info-button ax-btn"></div>
+       <div class="icon-pointer-right c-pointer-icon"></div>
+     </div>
+   </a>
+diff --git a/src/plugins/folderView/components/GridView.vue b/src/plugins/folderView/components/GridView.vue
+index 29ee9ee..789d1ca 100644
+--- a/src/plugins/folderView/components/GridView.vue
++++ b/src/plugins/folderView/components/GridView.vue
+@@ -20,13 +20,12 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div class="l-grid-view" role="grid" :aria-label="`${domainObject.name} Grid View`">
++  <div class="l-grid-view">
+     <GridItem
+       v-for="(item, index) in items"
+       :key="index"
+       :item="item"
+       :object-path="item.objectPath"
+-      role="gridcell"
+     />
+   </div>
+ </template>
 diff --git a/src/plugins/inspectorViews/elements/ElementItem.vue b/src/plugins/inspectorViews/elements/ElementItem.vue
 index f11056e..e69944e 100644
 --- a/src/plugins/inspectorViews/elements/ElementItem.vue
@@ -192,7 +425,7 @@ index f11056e..e69944e 100644
        class="c-tree__item c-elements-pool__item js-elements-pool__item"
        :class="{
 diff --git a/src/plugins/inspectorViews/properties/DetailText.vue b/src/plugins/inspectorViews/properties/DetailText.vue
-index 2f9c057..3c07615 100644
+index 2f9c057..89881bb 100644
 --- a/src/plugins/inspectorViews/properties/DetailText.vue
 +++ b/src/plugins/inspectorViews/properties/DetailText.vue
 @@ -21,11 +21,11 @@
@@ -201,7 +434,7 @@ index 2f9c057..3c07615 100644
  <template>
 -  <li class="c-inspect-properties__row" :aria-label="`${detail.name} inspector properties`">
 -    <div class="c-inspect-properties__label" aria-label="inspector property name">
-+  <li class="c-inspect-properties__row">
++  <li role="none" class="c-inspect-properties__row">
 +    <div class="c-inspect-properties__label">
        {{ detail.name }}
      </div>
@@ -210,6 +443,69 @@ index 2f9c057..3c07615 100644
        {{ detail.value }}
      </div>
    </li>
+diff --git a/src/plugins/inspectorViews/properties/LocationComponent.vue b/src/plugins/inspectorViews/properties/LocationComponent.vue
+index fe9d50e..b6bbf01 100644
+--- a/src/plugins/inspectorViews/properties/LocationComponent.vue
++++ b/src/plugins/inspectorViews/properties/LocationComponent.vue
+@@ -22,13 +22,12 @@
+ 
+ <template>
+   <div class="c-inspect-properties c-inspect-properties--location">
+-    <div class="c-inspect-properties__header" title="The location of this linked object.">
+-      Original Location
+-    </div>
+-    <ul class="c-inspect-properties__section">
+-      <li class="c-inspect-properties__row">
+-        <ul class="c-inspect-properties__value c-location">
++    <div class="c-inspect-properties__header">Original Location</div>
++    <ul role="none" class="c-inspect-properties__section">
++      <li role="none" class="c-inspect-properties__row">
++        <ul role="none" class="c-inspect-properties__value c-location">
+           <li
++            role="none"
+             v-for="pathObject in orderedPathBreadCrumb"
+             :key="pathObject.key"
+             class="c-location__item"
+diff --git a/src/plugins/inspectorViews/properties/PropertiesComponent.vue b/src/plugins/inspectorViews/properties/PropertiesComponent.vue
+index 8773fd8..e07c9c1 100644
+--- a/src/plugins/inspectorViews/properties/PropertiesComponent.vue
++++ b/src/plugins/inspectorViews/properties/PropertiesComponent.vue
+@@ -22,12 +22,9 @@
+ 
+ <template>
+   <div>
+-    <div
+-      class="c-inspector__properties c-inspect-properties"
+-      aria-label="Inspector Properties Details"
+-    >
++    <div class="c-inspector__properties c-inspect-properties">
+       <div class="c-inspect-properties__header">Details</div>
+-      <ul v-if="hasDetails" class="c-inspect-properties__section">
++      <ul role="none" v-if="hasDetails" class="c-inspect-properties__section">
+         <Component
+           :is="getComponent(detail)"
+           v-for="detail in details"
+diff --git a/src/plugins/notebook/components/NotebookMenuSwitcher.vue b/src/plugins/notebook/components/NotebookMenuSwitcher.vue
+index bfa3495..9238708 100644
+--- a/src/plugins/notebook/components/NotebookMenuSwitcher.vue
++++ b/src/plugins/notebook/components/NotebookMenuSwitcher.vue
+@@ -21,14 +21,9 @@
+ -->
+ <template>
+   <div class="c-menu-button c-ctrl-wrapper c-ctrl-wrapper--menus-left">
+-    <button
+-      class="c-icon-button c-button--menu icon-camera"
+-      :aria-label="snapshotMenuLabel"
+-      :title="snapshotMenuLabel"
+-      @click.stop.prevent="showMenu"
+-    >
++    <div class="c-icon-button c-button--menu icon-camera ax-btn" @click.stop.prevent="showMenu">
+       <span class="c-icon-button__label">Snapshot</span>
+-    </button>
++    </div>
+   </div>
+ </template>
+ 
 diff --git a/src/plugins/tabs/components/TabsComponent.vue b/src/plugins/tabs/components/TabsComponent.vue
 index 38dd560..207fcf6 100644
 --- a/src/plugins/tabs/components/TabsComponent.vue
@@ -307,7 +603,7 @@ index cf2c327..94b7441 100644
        {{ formattedCurrentValue }}
      </div>
 diff --git a/src/plugins/timeConductor/ConductorMode.vue b/src/plugins/timeConductor/ConductorMode.vue
-index da631bc..40a6877 100644
+index da631bc..169b113 100644
 --- a/src/plugins/timeConductor/ConductorMode.vue
 +++ b/src/plugins/timeConductor/ConductorMode.vue
 @@ -25,19 +25,13 @@
@@ -327,7 +623,7 @@ index da631bc..40a6877 100644
 -    class="c-compact-tc__setting-value__elem"
 -    aria-label="Time Conductor Mode"
 -  >
-+  <div v-else role="button" class="c-compact-tc__setting-value__elem">
++  <div v-else class="c-compact-tc__setting-value__elem">
      {{ selectedMode.name }}
    </div>
  </template>
@@ -367,6 +663,43 @@ index ec7488a..1c6a590 100644
        </div>
      </div>
    </form>
+diff --git a/src/styles/_controls.scss b/src/styles/_controls.scss
+index ae644f7..1860e33 100644
+--- a/src/styles/_controls.scss
++++ b/src/styles/_controls.scss
+@@ -139,6 +139,32 @@ button {
+     @include htmlInputReset();
+ }
+ 
++// div-soup: a <div> standing in for a <button>. Chrome's button defaults plus the app's own
++// `button` element rules above and in normalize. Specificity is (0,0,2): it beats the app's bare
++// `div { position: relative }` and loses to every class rule, as `button` did.
++div:is(div):where(.ax-btn) {
++    position: static;
++    display: inline-block;
++    box-sizing: border-box;
++    margin: 0;
++    padding: 1px 6px;
++    font: normal 400 100% / normal sans-serif;
++    letter-spacing: normal;
++    word-spacing: normal;
++    text-transform: none;
++    text-indent: 0;
++    text-shadow: none;
++    text-align: inherit;
++    vertical-align: baseline;
++    color: buttontext;
++    background: transparent;
++    border: none;
++    border-radius: 0;
++    outline: none;
++    appearance: none;
++    cursor: pointer;
++}
++
+ .c-button,
+ .c-button--menu {
+     @include cButton();
 diff --git a/src/ui/components/ObjectLabel.vue b/src/ui/components/ObjectLabel.vue
 index 9278f8f..5a1416e 100644
 --- a/src/ui/components/ObjectLabel.vue
@@ -389,30 +722,116 @@ index 9278f8f..5a1416e 100644
      </div>
      <div
        ref="objectLabel"
+diff --git a/src/ui/components/ObjectPath.vue b/src/ui/components/ObjectPath.vue
+index 0e4791a..2bc86fa 100644
+--- a/src/ui/components/ObjectPath.vue
++++ b/src/ui/components/ObjectPath.vue
+@@ -21,13 +21,13 @@
+ -->
+ 
+ <template>
+-  <ul
+-    v-if="orderedPath.length"
+-    class="c-location"
+-    :aria-label="`${domainObject.name}`"
+-    role="navigation"
+-  >
+-    <li v-for="pathObject in orderedPath" :key="pathObject.key" class="c-location__item">
++  <ul role="none" v-if="orderedPath.length" class="c-location">
++    <li
++      role="none"
++      v-for="pathObject in orderedPath"
++      :key="pathObject.key"
++      class="c-location__item"
++    >
+       <ObjectLabel
+         :domain-object="pathObject.domainObject"
+         :object-path="pathObject.objectPath"
+diff --git a/src/ui/components/ObjectView.vue b/src/ui/components/ObjectView.vue
+index e1633a0..3d90796 100644
+--- a/src/ui/components/ObjectView.vue
++++ b/src/ui/components/ObjectView.vue
+@@ -21,13 +21,7 @@
+ -->
+ <template>
+   <div>
+-    <div
+-      ref="objectViewWrapper"
+-      role="region"
+-      :aria-label="ariaLabel"
+-      class="c-object-view"
+-      :class="viewClasses"
+-    ></div>
++    <div ref="objectViewWrapper" class="c-object-view" :class="viewClasses"></div>
+   </div>
+ </template>
+ 
+diff --git a/src/ui/components/ToggleSwitch.vue b/src/ui/components/ToggleSwitch.vue
+index f8c0a85..b7ebb97 100644
+--- a/src/ui/components/ToggleSwitch.vue
++++ b/src/ui/components/ToggleSwitch.vue
+@@ -23,7 +23,7 @@
+   <div class="c-toggle-switch">
+     <label class="c-toggle-switch__control">
+       <input type="checkbox" :checked="checked" @change="onUserSelect($event)" />
+-      <span :id="id" class="c-toggle-switch__slider" role="switch" :aria-label="name"></span>
++      <span :id="id" class="c-toggle-switch__slider"></span>
+     </label>
+     <div v-if="label && label.length" class="c-toggle-switch__label">
+       {{ label }}
 diff --git a/src/ui/components/ViewControl.vue b/src/ui/components/ViewControl.vue
-index b6799f7..e84075f 100644
+index b6799f7..558221d 100644
 --- a/src/ui/components/ViewControl.vue
 +++ b/src/ui/components/ViewControl.vue
-@@ -24,7 +24,6 @@
+@@ -22,12 +22,7 @@
+ <template>
+   <span
      :class="[controlClass, { 'c-disclosure-triangle--expanded': value }, { 'is-enabled': enabled }]"
-     tabindex="0"
-     role="button"
+-    tabindex="0"
+-    role="button"
 -    :aria-label="ariaLabelValue"
-     :aria-expanded="value ? 'true' : 'false'"
+-    :aria-expanded="value ? 'true' : 'false'"
      @click="handleClick"
-     @keydown.enter="handleClick"
+-    @keydown.enter="handleClick"
+   ></span>
+ </template>
+ 
 diff --git a/src/ui/inspector/InspectorTabs.vue b/src/ui/inspector/InspectorTabs.vue
-index ce2e0b9..32e9b1f 100644
+index ce2e0b9..2e390eb 100644
 --- a/src/ui/inspector/InspectorTabs.vue
 +++ b/src/ui/inspector/InspectorTabs.vue
-@@ -29,7 +29,6 @@
+@@ -21,17 +21,13 @@
+ -->
+ 
+ <template>
+-  <div class="c-inspector__tabs c-tabs" role="tablist">
++  <div class="c-inspector__tabs c-tabs">
+     <div
+       v-for="tab in visibleTabs"
+       :key="tab.key"
+-      role="tab"
        class="c-inspector__tab c-tab"
        :class="{ 'is-current': isSelected(tab) }"
-       tabindex="0"
+-      tabindex="0"
 -      :title="tab.name"
        @click="selectTab(tab)"
-       @keydown.enter="selectTab(tab)"
+-      @keydown.enter="selectTab(tab)"
      >
+       <span class="c-inspector__tab-name c-tab__name">{{ tab.name }}</span>
+     </div>
+diff --git a/src/ui/inspector/InspectorViews.vue b/src/ui/inspector/InspectorViews.vue
+index d9e0921..e49a697 100644
+--- a/src/ui/inspector/InspectorViews.vue
++++ b/src/ui/inspector/InspectorViews.vue
+@@ -21,7 +21,7 @@
+ -->
+ 
+ <template>
+-  <div class="c-inspector__content" role="tabpanel" aria-label="Inspector Views"></div>
++  <div class="c-inspector__content"></div>
+ </template>
+ 
+ <script>
 diff --git a/src/ui/inspector/ObjectName.vue b/src/ui/inspector/ObjectName.vue
 index 9236a25..8723d4c 100644
 --- a/src/ui/inspector/ObjectName.vue
@@ -430,8 +849,124 @@ index 9236a25..8723d4c 100644
        </div>
        <span v-if="!singleSelectNonObject" class="c-inspector__selected c-object-label__name">{{
          item.name
+diff --git a/src/ui/layout/AppLayout.vue b/src/ui/layout/AppLayout.vue
+index bfc8184..d173cd5 100644
+--- a/src/ui/layout/AppLayout.vue
++++ b/src/ui/layout/AppLayout.vue
+@@ -39,37 +39,31 @@
+       <CreateButton class="l-shell__create-button" />
+       <GrandSearch ref="grand-search" />
+       <StatusIndicators ref="indicatorsComponent" />
+-      <button
+-        class="l-shell__head__button"
++      <div
++        class="l-shell__head__button ax-btn"
+         :class="indicatorsMultilineCssClass"
+-        :aria-label="indicatorsMultilineLabel"
+-        :title="indicatorsMultilineLabel"
+         @click="toggleIndicatorsMultiline"
+-      ></button>
+-      <button
+-        class="l-shell__head__button"
++      ></div>
++      <div
++        class="l-shell__head__button ax-btn"
+         :class="headExpanded ? 'icon-items-collapse' : 'icon-items-expand'"
+-        :aria-label="`Show ${headExpanded ? 'icon only' : 'icon and name'}`"
+-        :title="`Show ${headExpanded ? 'icon only' : 'icon and name'}`"
+         @click="toggleShellHead"
+-      ></button>
++      ></div>
+       <NotificationBanner />
+       <div class="l-shell__head-section l-shell__controls">
+-        <button
+-          class="c-icon-button c-icon-button--major icon-new-window"
+-          title="Open in a new browser tab"
++        <div
++          class="c-icon-button c-icon-button--major icon-new-window ax-btn"
+           target="_blank"
+           @click="openInNewTab"
+-        ></button>
+-        <button
++        ></div>
++        <div
++          class="ax-btn"
+           :class="[
+             'c-icon-button c-icon-button--major',
+             fullScreen ? 'icon-fullscreen-collapse' : 'icon-fullscreen-expand'
+           ]"
+-          :aria-label="`${fullScreen ? 'Exit' : 'Enable'} full screen mode`"
+-          :title="`${fullScreen ? 'Exit' : 'Enable'} full screen mode`"
+           @click="fullScreenToggle"
+-        ></button>
++        ></div>
+       </div>
+       <AppLogo />
+     </div>
+@@ -87,18 +81,14 @@
+         @end-resizing="onEndResizing"
+       >
+         <template #controls>
+-          <button
+-            class="c-icon-button l-shell__reset-tree-button icon-folders-collapse"
+-            aria-label="Collapse all tree items"
+-            title="Collapse all tree items"
++          <div
++            class="c-icon-button l-shell__reset-tree-button icon-folders-collapse ax-btn"
+             @click="handleTreeReset"
+-          ></button>
+-          <button
+-            class="c-icon-button l-shell__sync-tree-button icon-target"
+-            aria-label="Show selected item in tree"
+-            title="Show selected item in tree"
++          ></div>
++          <div
++            class="c-icon-button l-shell__sync-tree-button icon-target ax-btn"
+             @click="handleSyncTreeNavigation"
+-          ></button>
++          ></div>
+         </template>
+         <Multipane type="vertical">
+           <Pane>
+@@ -123,18 +113,16 @@
+               @set-clear-button-disabled="setClearButtonDisabled"
+             />
+             <template #controls>
+-              <button
+-                class="c-icon-button icon-clear-data"
+-                aria-label="Clear Recently Viewed"
+-                title="Clear Recently Viewed"
+-                :disabled="disableClearButton"
++              <div
++                class="c-icon-button icon-clear-data ax-btn"
++                :disabled="disableClearButton || null"
+                 @click="handleClearRecentObjects"
+-              ></button>
++              ></div>
+             </template>
+           </Pane>
+         </Multipane>
+       </Pane>
+-      <Pane class="l-shell__pane-main" role="main">
++      <Pane class="l-shell__pane-main">
+         <BrowseBar
+           ref="browseBar"
+           class="l-shell__main-view-browse-bar"
+@@ -150,11 +138,7 @@
+           :show-edit-view="true"
+           @change-action-collection="setActionCollection"
+         />
+-        <component
+-          :is="conductorComponent"
+-          class="l-shell__time-conductor"
+-          aria-label="Global Time Conductor"
+-        />
++        <component :is="conductorComponent" class="l-shell__time-conductor" />
+       </Pane>
+       <Pane
+         class="l-shell__pane-inspector l-pane--holds-multipane"
 diff --git a/src/ui/layout/BrowseBar.vue b/src/ui/layout/BrowseBar.vue
-index d1fba97..b4c6a21 100644
+index d1fba97..cf98c10 100644
 --- a/src/ui/layout/BrowseBar.vue
 +++ b/src/ui/layout/BrowseBar.vue
 @@ -20,22 +20,19 @@
@@ -441,13 +976,16 @@ index d1fba97..b4c6a21 100644
 -  <div class="l-browse-bar" aria-label="Browse bar">
 +  <div class="l-browse-bar">
      <div class="l-browse-bar__start">
-       <button
+-      <button
++      <div
          v-if="hasParent"
 -        aria-label="Navigate up to parent"
-         class="l-browse-bar__nav-to-parent-button c-icon-button c-icon-button--major icon-arrow-nav-to-parent"
+-        class="l-browse-bar__nav-to-parent-button c-icon-button c-icon-button--major icon-arrow-nav-to-parent"
 -        title="Navigate up to parent"
++        class="l-browse-bar__nav-to-parent-button c-icon-button c-icon-button--major icon-arrow-nav-to-parent ax-btn"
          @click="goToParent"
-       ></button>
+-      ></button>
++      ></div>
        <div class="l-browse-bar__object-name--w c-object-label" :class="[statusClass]">
          <div class="c-object-label__type-icon" :class="cssClass">
 -          <span class="is-status__indicator" :title="`This item is ${status}`"></span>
@@ -459,26 +997,36 @@ index d1fba97..b4c6a21 100644
            class="l-browse-bar__object-name c-object-label__name"
            :class="{ 'c-input-inline': isPersistable }"
            :contenteditable="isNameEditable"
-@@ -73,16 +70,12 @@
+@@ -69,81 +66,61 @@
+         class="c-notebook-snapshot-menubutton"
+       />
+       <div class="l-browse-bar__actions">
+-        <button
++        <div
            v-for="(item, index) in statusBarItems"
            :key="index"
-           class="c-button"
+-          class="c-button"
 -          :aria-label="item.name"
 -          :title="item.name"
++          class="c-button ax-btn"
            :class="item.cssClass"
            @click="item.onItemClicked"
-         ></button>
+-        ></button>
++        ></div>
  
-         <button
+-        <button
++        <div
++          class="ax-btn"
            v-if="shouldShowLock"
 -          :aria-label="lockedOrUnlockedTitle"
 -          :title="lockedOrUnlockedTitle"
            :class="{
              'c-button icon-lock': domainObject.locked,
              'c-icon-button icon-unlocked': !domainObject.locked
-@@ -90,18 +83,11 @@
+           }"
            @click="toggleLock(!domainObject.locked)"
-         ></button>
+-        ></button>
++        ></div>
  
 -        <span
 -          v-else-if="domainObject?.locked"
@@ -488,68 +1036,96 @@ index d1fba97..b4c6a21 100644
 -        ></span>
 +        <span v-else-if="domainObject?.locked" class="icon-lock"></span>
  
-         <button
+-        <button
++        <div
            v-if="isViewEditable && !isEditing && !domainObject.locked"
-           class="l-browse-bar__actions__edit c-button c-button--major icon-pencil"
+-          class="l-browse-bar__actions__edit c-button c-button--major icon-pencil"
 -          title="Edit Object"
 -          aria-label="Edit Object"
++          class="l-browse-bar__actions__edit c-button c-button--major icon-pencil ax-btn"
            @click="edit()"
-         ></button>
+-        ></button>
++        ></div>
  
-@@ -111,22 +97,12 @@
+         <div
+           v-if="isEditing"
+           class="l-browse-bar__view-switcher c-ctrl-wrapper c-ctrl-wrapper--menus-left"
          >
-           <button
-             class="c-button--menu c-button--major icon-save"
+-          <button
+-            class="c-button--menu c-button--major icon-save"
 -            title="Save"
 -            aria-label="Save"
++          <div
++            class="c-button--menu c-button--major icon-save ax-btn"
              @click.stop="toggleSaveMenu"
-           ></button>
+-          ></button>
++          ></div>
            <div v-show="showSaveMenu" class="c-menu">
-             <ul>
+-            <ul>
 -              <li class="icon-save" title="Save and Finish Editing" @click="saveAndFinishEditing">
--                Save and Finish Editing
--              </li>
++            <ul role="none">
++              <li role="none" class="icon-save" @click="saveAndFinishEditing">
+                 Save and Finish Editing
+               </li>
 -              <li
 -                class="icon-save"
 -                title="Save and Continue Editing"
 -                @click="saveAndContinueEditing"
 -              >
--                Save and Continue Editing
--              </li>
-+              <li class="icon-save" @click="saveAndFinishEditing">Save and Finish Editing</li>
-+              <li class="icon-save" @click="saveAndContinueEditing">Save and Continue Editing</li>
++              <li role="none" class="icon-save" @click="saveAndContinueEditing">
+                 Save and Continue Editing
+               </li>
              </ul>
            </div>
          </div>
-@@ -134,14 +110,10 @@
-         <button
+ 
+-        <button
++        <div
            v-if="isEditing"
-           class="l-browse-bar__actions c-button icon-x"
+-          class="l-browse-bar__actions c-button icon-x"
 -          aria-label="Cancel Editing"
 -          title="Cancel Editing"
++          class="l-browse-bar__actions c-button icon-x ax-btn"
            @click="promptUserandCancelEditing()"
-         ></button>
-         <button
-           class="l-browse-bar__actions c-icon-button icon-3-dots"
+-        ></button>
+-        <button
+-          class="l-browse-bar__actions c-icon-button icon-3-dots"
 -          title="More actions"
 -          aria-label="More actions"
++        ></div>
++        <div
++          class="l-browse-bar__actions c-icon-button icon-3-dots ax-btn"
            @click.prevent.stop="showMenuItems($event)"
-         ></button>
+-        ></button>
++        ></div>
        </div>
+     </div>
+   </div>
 diff --git a/src/ui/layout/CreateButton.vue b/src/ui/layout/CreateButton.vue
-index 5c22ce0..4b16b1b 100644
+index 5c22ce0..6d2e0d3 100644
 --- a/src/ui/layout/CreateButton.vue
 +++ b/src/ui/layout/CreateButton.vue
-@@ -24,7 +24,6 @@
-     <button
-       class="c-create-button c-button--menu c-button--major icon-plus"
-       :aria-disabled="isEditing"
+@@ -21,14 +21,13 @@
+ -->
+ <template>
+   <div ref="createButton" class="c-create-button--w">
+-    <button
+-      class="c-create-button c-button--menu c-button--major icon-plus"
+-      :aria-disabled="isEditing"
 -      aria-labelledby="create-button-label"
++    <div
++      class="c-create-button c-button--menu c-button--major icon-plus ax-btn"
++      :class="{ disabled: isEditing }"
        @click.prevent.stop="showCreateMenu"
      >
        <span id="create-button-label" class="c-button__label">Create</span>
+-    </button>
++    </div>
+   </div>
+ </template>
+ <script>
 diff --git a/src/ui/layout/MctTree.vue b/src/ui/layout/MctTree.vue
-index cc1d349..3569662 100644
+index cc1d349..fdc36b7 100644
 --- a/src/ui/layout/MctTree.vue
 +++ b/src/ui/layout/MctTree.vue
 @@ -50,13 +50,7 @@
@@ -563,7 +1139,7 @@ index cc1d349..3569662 100644
 -      :aria-label="getAriaLabel"
 -      aria-expanded="true"
 -    >
-+    <div ref="mainTree" class="c-tree-and-search__tree c-tree" role="tree" aria-expanded="true">
++    <div ref="mainTree" class="c-tree-and-search__tree c-tree">
        <div
          ref="dummyItem"
          class="c-tree__item-h"
@@ -576,16 +1152,272 @@ index cc1d349..3569662 100644
              </div>
              <div class="c-tree__item__name c-object-label__name">Open MCT</div>
            </a>
+diff --git a/src/ui/layout/PaneContainer.vue b/src/ui/layout/PaneContainer.vue
+index 06960ec..8c94f73 100644
+--- a/src/ui/layout/PaneContainer.vue
++++ b/src/ui/layout/PaneContainer.vue
+@@ -21,34 +21,20 @@
+ -->
+ <template>
+   <div class="l-pane" :class="paneClasses">
+-    <div
+-      v-if="handle"
+-      class="l-pane__handle"
+-      :aria-label="handleLabel"
+-      :aria-grabbed="resizing"
+-      @mousedown.prevent="startResizing"
+-    ></div>
++    <div v-if="handle" class="l-pane__handle" @mousedown.prevent="startResizing"></div>
+     <div class="l-pane__header">
+       <span v-if="label" class="l-pane__label">{{ label }}</span>
+       <slot name="controls"></slot>
+-      <button
++      <div
+         v-if="isCollapsable"
+-        class="l-pane__collapse-button c-icon-button"
++        class="l-pane__collapse-button c-icon-button ax-btn"
+         :name="collapseTitle"
+-        :aria-label="collapseTitle"
+-        :title="collapseTitle"
+         @click="toggleCollapse"
+-      ></button>
++      ></div>
+     </div>
+-    <button
+-      class="l-pane__expand-button"
+-      :name="expandTitle"
+-      :aria-label="expandTitle"
+-      :title="expandTitle"
+-      @click="toggleCollapse"
+-    >
++    <div class="l-pane__expand-button ax-btn" :name="expandTitle" @click="toggleCollapse">
+       <span class="l-pane__expand-button__label">{{ label }}</span>
+-    </button>
++    </div>
+     <div class="l-pane__contents">
+       <slot></slot>
+     </div>
+diff --git a/src/ui/layout/RecentObjectsList.vue b/src/ui/layout/RecentObjectsList.vue
+index f09fa75..0c83b39 100644
+--- a/src/ui/layout/RecentObjectsList.vue
++++ b/src/ui/layout/RecentObjectsList.vue
+@@ -21,7 +21,7 @@
+ -->
+ <template>
+   <div class="c-tree-and-search l-shell__tree">
+-    <ul class="c-tree-and-search__tree c-tree c-tree__scrollable" aria-label="Recent Objects">
++    <ul role="none" class="c-tree-and-search__tree c-tree c-tree__scrollable">
+       <RecentObjectsListItem
+         v-for="recentObject in recentObjects"
+         :key="recentObject.navigationPath"
+diff --git a/src/ui/layout/RecentObjectsListItem.vue b/src/ui/layout/RecentObjectsListItem.vue
+index 5f624c2..057ffd9 100644
+--- a/src/ui/layout/RecentObjectsListItem.vue
++++ b/src/ui/layout/RecentObjectsListItem.vue
+@@ -22,9 +22,9 @@
+ 
+ <template>
+   <li
++    role="none"
+     class="c-recentobjects-listitem c-recentobjects-listitem--object"
+     :class="isAlias"
+-    :aria-label="`${domainObject.name}`"
+   >
+     <div
+       class="c-recentobjects-listitem__type-icon recent-object-icon"
+@@ -52,11 +52,7 @@
+       />
+     </div>
+     <div class="c-recentobjects-listitem__target-button">
+-      <button
+-        class="c-icon-button icon-target"
+-        :aria-label="`Open and scroll to ${domainObject.name}`"
+-        @click="openAndScrollTo(navigationPath)"
+-      ></button>
++      <div class="c-icon-button icon-target ax-btn" @click="openAndScrollTo(navigationPath)"></div>
+     </div>
+   </li>
+ </template>
+diff --git a/src/ui/layout/TreeItem.vue b/src/ui/layout/TreeItem.vue
+index 5104d9c..b7800a8 100644
+--- a/src/ui/layout/TreeItem.vue
++++ b/src/ui/layout/TreeItem.vue
+@@ -20,14 +20,7 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div
+-    class="c-tree__item-h"
+-    role="treeitem"
+-    :style="treeItemStyles"
+-    :aria-expanded="
+-      !activeSearch && hasComposition ? (isOpen || isLoading ? 'true' : 'false') : undefined
+-    "
+-  >
++  <div class="c-tree__item-h" :style="treeItemStyles">
+     <div
+       class="c-tree__item"
+       :class="{
 diff --git a/src/ui/layout/ViewSwitcher.vue b/src/ui/layout/ViewSwitcher.vue
-index 0c62325..6496fc9 100644
+index 0c62325..e450bcd 100644
 --- a/src/ui/layout/ViewSwitcher.vue
 +++ b/src/ui/layout/ViewSwitcher.vue
-@@ -27,8 +27,6 @@
-     <button
-       class="c-icon-button c-button--menu"
+@@ -24,17 +24,15 @@
+     v-if="views.length > 1"
+     class="l-browse-bar__view-switcher c-ctrl-wrapper c-ctrl-wrapper--menus-left"
+   >
+-    <button
+-      class="c-icon-button c-button--menu"
++    <div
++      class="c-icon-button c-button--menu ax-btn"
        :class="currentView.cssClass"
 -      :title="viewSwitcherLabel"
 -      :aria-label="viewSwitcherLabel"
        @click.prevent.stop="showMenu"
      >
        <span class="c-icon-button__label">
+         {{ currentView.name }}
+       </span>
+-    </button>
++    </div>
+   </div>
+ </template>
+ 
+diff --git a/src/ui/layout/search/GrandSearch.vue b/src/ui/layout/search/GrandSearch.vue
+index 1d744a2..ca54536 100644
+--- a/src/ui/layout/search/GrandSearch.vue
++++ b/src/ui/layout/search/GrandSearch.vue
+@@ -21,7 +21,7 @@
+ -->
+ 
+ <template>
+-  <div ref="GrandSearch" aria-label="OpenMCT Search" class="c-gsearch" role="search">
++  <div ref="GrandSearch" class="c-gsearch">
+     <SearchResultsDropDown ref="searchResultsDropDown" />
+     <Search
+       ref="shell-search"
+diff --git a/src/ui/layout/search/ObjectSearchResult.vue b/src/ui/layout/search/ObjectSearchResult.vue
+index c3a392c..215acd4 100644
+--- a/src/ui/layout/search/ObjectSearchResult.vue
++++ b/src/ui/layout/search/ObjectSearchResult.vue
+@@ -21,17 +21,9 @@
+ -->
+ 
+ <template>
+-  <div
+-    class="c-gsearch-result c-gsearch-result--object"
+-    aria-label="Object Search Result"
+-    role="listitem"
+-  >
++  <div class="c-gsearch-result c-gsearch-result--object">
+     <div class="c-gsearch-result__type-icon" :class="resultTypeIcon"></div>
+-    <div
+-      class="c-gsearch-result__body"
+-      role="option"
+-      :aria-label="`${resultName} ${resultType} result`"
+-    >
++    <div class="c-gsearch-result__body">
+       <div
+         ref="resultName"
+         class="c-gsearch-result__title"
+@@ -48,7 +40,7 @@
+       <ObjectPath :read-only="false" :domain-object="result" />
+     </div>
+     <div class="c-gsearch-result__more-options-button">
+-      <button class="c-icon-button icon-3-dots"></button>
++      <div class="c-icon-button icon-3-dots ax-btn"></div>
+     </div>
+   </div>
+ </template>
+diff --git a/src/ui/layout/search/SearchResultsDropDown.vue b/src/ui/layout/search/SearchResultsDropDown.vue
+index 32bb7d3..0e9a069 100644
+--- a/src/ui/layout/search/SearchResultsDropDown.vue
++++ b/src/ui/layout/search/SearchResultsDropDown.vue
+@@ -21,25 +21,13 @@
+ -->
+ 
+ <template>
+-  <div
+-    v-show="resultsShown"
+-    role="dialog"
+-    aria-label="Search Results Dropdown"
+-    class="c-gsearch__dropdown"
+-  >
+-    <button
+-      aria-label="Close"
+-      class="c-gsearch__results-close c-click-icon c-overlay__close-button icon-x"
++  <div v-show="resultsShown" class="c-gsearch__dropdown">
++    <div
++      class="c-gsearch__results-close c-click-icon c-overlay__close-button icon-x ax-btn"
+       @click="selectedResult"
+-    ></button>
++    ></div>
+     <div class="c-gsearch__results" :class="{ 'search-finished': !searchLoading }">
+-      <div
+-        v-if="objectResults?.length"
+-        ref="objectResults"
+-        class="c-gsearch__results-section"
+-        role="list"
+-        aria-label="Object Results"
+-      >
++      <div v-if="objectResults?.length" ref="objectResults" class="c-gsearch__results-section">
+         <div class="c-gsearch__results-section-title">Object Results</div>
+         <ObjectSearchResult
+           v-for="objectResult in objectResults"
+@@ -49,12 +37,7 @@
+           @click="selectedResult"
+         />
+       </div>
+-      <div
+-        v-if="annotationResults?.length"
+-        ref="annotationResults"
+-        role="list"
+-        aria-label="Annotation Results"
+-      >
++      <div v-if="annotationResults?.length" ref="annotationResults">
+         <div class="c-gsearch__results-section-title">Annotation Results</div>
+         <AnnotationSearchResult
+           v-for="annotationResult in annotationResults"
+diff --git a/src/ui/layout/status-bar/NotificationBanner.vue b/src/ui/layout/status-bar/NotificationBanner.vue
+index 12f6eee..c958bd1 100644
+--- a/src/ui/layout/status-bar/NotificationBanner.vue
++++ b/src/ui/layout/status-bar/NotificationBanner.vue
+@@ -20,8 +20,6 @@
+   <div
+     v-if="activeModel.message"
+     class="c-message-banner"
+-    role="alert"
+-    :aria-live="activeModel.severity === 'error' ? 'assertive' : 'polite'"
+     :class="[
+       activeModel.severity,
+       {
+@@ -46,7 +44,6 @@
+     />
+     <button
+       class="c-message-banner__close-button c-click-icon icon-x-in-circle"
+-      aria-label="Dismiss"
+       @click.stop="dismiss()"
+     ></button>
+   </div>
+diff --git a/src/ui/layout/status-bar/StatusIndicators.vue b/src/ui/layout/status-bar/StatusIndicators.vue
+index 71ebb35..81d17c1 100644
+--- a/src/ui/layout/status-bar/StatusIndicators.vue
++++ b/src/ui/layout/status-bar/StatusIndicators.vue
+@@ -17,16 +17,11 @@
+  at runtime from the About dialog for additional information.
+ -->
+ <template>
+-  <div
+-    ref="indicatorsContainer"
+-    aria-label="Status Indicators"
+-    class="l-shell__head-section l-shell__indicators"
+-  >
++  <div ref="indicatorsContainer" class="l-shell__head-section l-shell__indicators">
+     <component
+       :is="indicator.value.vueComponent"
+       v-for="indicator in sortedIndicators"
+       :key="indicator.value.key"
+-      role="status"
+     />
+   </div>
+ </template>
