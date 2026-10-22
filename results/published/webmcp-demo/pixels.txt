@@ -1,0 +1,14 @@
+same  div-soup vs wcag  top
+same  div-soup vs wcag  compare
+same  div-soup vs wcag  widgets
+same  div-soup vs wcag  tools
+same  div-soup vs wcag  next-month
+same  div-soup vs wcag  day-picked
+same  div-soup vs wcag  slot-picked
+same  div-soup vs patterns  top
+same  div-soup vs patterns  compare
+same  div-soup vs patterns  widgets
+same  div-soup vs patterns  tools
+same  div-soup vs patterns  next-month
+same  div-soup vs patterns  day-picked
+same  div-soup vs patterns  slot-picked
