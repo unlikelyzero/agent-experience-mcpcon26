@@ -31,8 +31,11 @@ export async function atState<T>(browser: Browser, url: string, state: EvalState
   try {
     const page = await context.newPage();
     await page.clock.setFixedTime(NOW);
-    await page.goto(url + state.path, { waitUntil: 'networkidle' });
-    if (state.setup) await page.click(state.setup);
+    await page.goto(url + state.path, { waitUntil: 'load' });
+    // Apps that hold a request open (Open MCT's CouchDB changes feed) never go idle; the settle
+    // loop below is what decides the state is ready.
+    await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+    for (const selector of [state.setup ?? []].flat()) await page.click(selector);
     let last: Buffer = Buffer.alloc(0);
     for (let i = 0; i < 20; i++) {
       await page.waitForTimeout(500);
