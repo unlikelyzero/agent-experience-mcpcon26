@@ -77,6 +77,13 @@ const folder = (p: 'p' | 's', name: string, amplitude: number): Seed => ({
 });
 const PROD_AMPLITUDE = 2.75;
 const STAGING_AMPLITUDE = 3.25;
+/**
+ * A fixed half hour long past, for states that show a plot: the generator streams points from a
+ * worker on the real clock, which the eval's frozen page clock doesn't reach, and points near "now"
+ * land at the plot's right edge a few pixels at a time.
+ */
+const PAST = 'tc.mode=fixed&tc.startBound=1767225600000&tc.endBound=1767227400000&tc.timeSystem=utc';
+
 /** Exported for hand-checking graders without re-seeding. */
 export const FIXTURE: Seed = {
   mine: { name: 'My Items', type: 'folder', location: 'ROOT', composition: [id('ops-prod'), id('ops-staging')] },
@@ -223,15 +230,17 @@ export const openmct: AppAdapter<Seed> = {
   },
 
   tasks: TASKS,
-  // The axe scan in DESIGN.md §10 also covers the create dialog and Edit Properties, which take
-  // two clicks; `setup` is one selector, so they wait for multi-step setup.
+  // Setup selectors avoid the `button` tag and the classes div-soup suffixes, so they work in every
+  // tier.
   evalStates: [
     { name: 'prod-folder', path: '/#/browse/mine/ops-prod' },
-    { name: 'battery-temp', path: '/#/browse/mine/ops-prod/p-battery' },
+    { name: 'battery-temp', path: `/#/browse/mine/ops-prod/p-battery?${PAST}` },
     { name: 'overview', path: '/#/browse/mine/ops-prod/p-overview' },
     { name: 'overview-editing', path: '/#/browse/mine/ops-prod/p-overview', setup: '.l-browse-bar__actions__edit' },
-    { name: 'create-menu', path: '/#/browse/mine/ops-prod', setup: '.c-create-button' },
-    { name: 'more-actions', path: '/#/browse/mine/ops-prod/p-battery', setup: 'button.l-browse-bar__actions.icon-3-dots' },
+    { name: 'create-menu', path: '/#/browse/mine/ops-prod', setup: '.c-create-button--w > *' },
+    { name: 'more-actions', path: `/#/browse/mine/ops-prod/p-battery?${PAST}`, setup: '.l-browse-bar .icon-3-dots' },
+    { name: 'create-dialog', path: '/#/browse/mine/ops-prod', setup: ['.c-create-button--w > *', 'li:text-is("Display Layout")'] },
+    { name: 'edit-properties', path: `/#/browse/mine/ops-prod/p-battery?${PAST}`, setup: ['.l-browse-bar .icon-3-dots', 'li:text-is("Edit Properties...")'] },
     { name: 'conductor-popup', path: '/#/browse/mine/ops-prod', setup: '.c-compact-tc__setting-value' },
   ],
 };
