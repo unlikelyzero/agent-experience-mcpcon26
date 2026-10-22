@@ -112,7 +112,7 @@ selected-state, because a `<div>` gives it nothing to check.
   run, against 13.7 and 1.6 at WCAG, and its M1 and M2 runs cost 2–3× their WCAG runs.
 
   This is the first app in the set where div soup isn't the most expensive tier for every model.
-  Across Headlamp and Open MCT it cost every model 9–147% more.
+  On what-iff, Headlamp and Open MCT it cost every model 9–147% more.
 - **Why div soup can be cheaper: on a small page, semantics are also tokens.** A page that small
   costs few steps to scrape, and Opus does it in 8.7 tool calls per run at div soup. Each
   snapshot is also smaller there. Measured with Playwright's AI-mode aria snapshot:
