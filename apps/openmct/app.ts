@@ -51,9 +51,14 @@ type Model = { name: string; type: string; location: string } & Record<string, u
 type Seed = Record<string, Model>;
 
 const id = (key: string) => ({ key, namespace: '' });
-const generator = (name: string, location: string, amplitude: number): Model => ({
+/**
+ * Battery Temp emits one point per 2.8 h, so no live point lands while the pixel eval shoots the
+ * states that show it. Its plot is empty; no task reads it.
+ */
+const BATTERY_RATE_HZ = 0.0001;
+const generator = (name: string, location: string, amplitude: number, dataRateInHz = 1): Model => ({
   name, type: 'generator', location,
-  telemetry: { period: 10, amplitude, offset: 0, dataRateInHz: 1, phase: 0, randomness: 0, loadDelay: 0,
+  telemetry: { period: 10, amplitude, offset: 0, dataRateInHz, phase: 0, randomness: 0, loadDelay: 0,
     infinityValues: false, exceedFloat32: false, staleness: false },
 });
 const layout = (name: string, location: string): Model =>
@@ -62,7 +67,7 @@ const layout = (name: string, location: string): Model =>
 const folder = (p: 'p' | 's', name: string, amplitude: number): Seed => ({
   [`ops-${p === 'p' ? 'prod' : 'staging'}`]: { name, type: 'folder', location: 'mine',
     composition: [id(`${p}-battery`), id(`${p}-bus`), id(`${p}-overview`)] },
-  [`${p}-battery`]: generator('Battery Temp', `ops-${p === 'p' ? 'prod' : 'staging'}`, amplitude),
+  [`${p}-battery`]: generator('Battery Temp', `ops-${p === 'p' ? 'prod' : 'staging'}`, amplitude, BATTERY_RATE_HZ),
   [`${p}-bus`]: generator('Bus Voltage', `ops-${p === 'p' ? 'prod' : 'staging'}`, 1),
   [`${p}-overview`]: {
     name: 'Overview', type: 'flexible-layout', location: `ops-${p === 'p' ? 'prod' : 'staging'}`,
@@ -78,9 +83,9 @@ const folder = (p: 'p' | 's', name: string, amplitude: number): Seed => ({
 const PROD_AMPLITUDE = 2.75;
 const STAGING_AMPLITUDE = 3.25;
 /**
- * A fixed half hour long past, for states that show a plot: the generator streams points from a
- * worker on the real clock, which the eval's frozen page clock doesn't reach, and points near "now"
- * land at the plot's right edge a few pixels at a time.
+ * A fixed half hour long past, for states that show Battery Temp. The generator streams points from
+ * a worker on the real clock, which the eval's frozen page clock doesn't reach; the plot draws a
+ * segment toward each new point, and that flickers at its right edge. See BATTERY_RATE_HZ.
  */
 const PAST = 'tc.mode=fixed&tc.startBound=1767225600000&tc.endBound=1767227400000&tc.timeSystem=utc';
 

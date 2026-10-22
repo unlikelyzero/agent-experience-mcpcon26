@@ -1,0 +1,276 @@
+diff --git a/src/api/forms/components/FormProperties.vue b/src/api/forms/components/FormProperties.vue
+index 1e4bdf3..3c6d956 100644
+--- a/src/api/forms/components/FormProperties.vue
++++ b/src/api/forms/components/FormProperties.vue
+@@ -54,7 +54,7 @@
+         tabindex="0"
+         :disabled="isInvalid"
+         class="c-button c-button--major"
+-        aria-label="Save"
++        aria-label="Ok, Save"
+         @click="onSave"
+       >
+         {{ submitLabel }}
+diff --git a/src/api/forms/components/controls/TextAreaField.vue b/src/api/forms/components/controls/TextAreaField.vue
+index 98c93b9..d3cc73d 100644
+--- a/src/api/forms/components/controls/TextAreaField.vue
++++ b/src/api/forms/components/controls/TextAreaField.vue
+@@ -25,6 +25,7 @@
+     <span class="field control" :class="model.cssClass">
+       <textarea
+         :id="`${model.key}-textarea`"
++        :aria-label="model.name"
+         v-model="field"
+         type="text"
+         :size="model.size"
+diff --git a/src/api/menu/components/SuperMenu.vue b/src/api/menu/components/SuperMenu.vue
+index cd8d72f..0ec79c6 100644
+--- a/src/api/menu/components/SuperMenu.vue
++++ b/src/api/menu/components/SuperMenu.vue
+@@ -29,6 +29,7 @@
+     <ul
+       v-if="options.actions.length && options.actions[0].length"
+       role="menu"
++      tabindex="0"
+       class="c-super-menu__menu"
+     >
+       <template v-for="(actionGroups, index) in options.actions" :key="index">
+@@ -57,7 +58,7 @@
+       >
+     </ul>
+ 
+-    <ul v-else class="c-super-menu__menu" role="menu">
++    <ul v-else class="c-super-menu__menu" role="menu" tabindex="0">
+       <li
+         v-for="action in options.actions"
+         :key="action.name"
+diff --git a/src/plugins/displayLayout/components/DisplayLayout.vue b/src/plugins/displayLayout/components/DisplayLayout.vue
+index fd5bdb3..9c2e1f9 100644
+--- a/src/plugins/displayLayout/components/DisplayLayout.vue
++++ b/src/plugins/displayLayout/components/DisplayLayout.vue
+@@ -28,6 +28,7 @@
+       'is-multi-selected': selectedLayoutItems.length > 1,
+       'allow-editing': isEditing
+     }"
++    role="group"
+     :aria-label="`${domainObject.name} Layout`"
+     @dragover="handleDragOver"
+     @click.capture="bypassSelection"
+diff --git a/src/plugins/flexibleLayout/components/ContainerComponent.vue b/src/plugins/flexibleLayout/components/ContainerComponent.vue
+index f216259..763e5a8 100644
+--- a/src/plugins/flexibleLayout/components/ContainerComponent.vue
++++ b/src/plugins/flexibleLayout/components/ContainerComponent.vue
+@@ -31,11 +31,15 @@
+       v-show="isEditing"
+       class="c-fl-container__header"
+       draggable="true"
+-      role="columnheader"
+-      :aria-label="`Container Handle ${index + 1}`"
++      role="row"
+       @dragstart="startContainerDrag"
+     >
+-      <span class="c-fl-container__size-indicator">{{ sizeString }}</span>
++      <span
++        class="c-fl-container__size-indicator"
++        role="columnheader"
++        :aria-label="`Container Handle ${index + 1}`"
++        >{{ sizeString }}</span
++      >
+     </div>
+ 
+     <DropHint
+@@ -52,7 +56,6 @@
+           :frame="frame"
+           :index="i"
+           role="gridcell"
+-          :aria-label="`Container Frame ${index}`"
+           :container-index="index"
+           :is-editing="isEditing"
+           :object-path="objectPath"
+diff --git a/src/plugins/folderView/components/GridView.vue b/src/plugins/folderView/components/GridView.vue
+index 29ee9ee..beabe48 100644
+--- a/src/plugins/folderView/components/GridView.vue
++++ b/src/plugins/folderView/components/GridView.vue
+@@ -21,13 +21,15 @@
+ -->
+ <template>
+   <div class="l-grid-view" role="grid" :aria-label="`${domainObject.name} Grid View`">
+-    <GridItem
+-      v-for="(item, index) in items"
+-      :key="index"
+-      :item="item"
+-      :object-path="item.objectPath"
+-      role="gridcell"
+-    />
++    <div role="row" style="display: contents">
++      <GridItem
++        v-for="(item, index) in items"
++        :key="index"
++        :item="item"
++        :object-path="item.objectPath"
++        role="gridcell"
++      />
++    </div>
+   </div>
+ </template>
+ 
+diff --git a/src/plugins/plot/axis/XAxis.vue b/src/plugins/plot/axis/XAxis.vue
+index c32d21a..345a6b4 100644
+--- a/src/plugins/plot/axis/XAxis.vue
++++ b/src/plugins/plot/axis/XAxis.vue
+@@ -32,6 +32,7 @@
+       v-show="isEnabledXKeyToggle()"
+       v-model="selectedXKeyOptionKey"
+       class="gl-plot-x-label__select local-controls--hidden"
++      aria-label="X axis label"
+       @change="toggleXKeyOption()"
+     >
+       <option v-for="option in xKeyOptions" :key="option.key" :value="option.key">
+diff --git a/src/plugins/plot/axis/YAxis.vue b/src/plugins/plot/axis/YAxis.vue
+index da6855e..b592f37 100644
+--- a/src/plugins/plot/axis/YAxis.vue
++++ b/src/plugins/plot/axis/YAxis.vue
+@@ -48,6 +48,7 @@
+       v-if="yKeyOptions.length > 1 && singleSeries"
+       v-model="yAxisLabel"
+       class="gl-plot-y-label__select local-controls--hidden"
++      aria-label="Y axis label"
+       @change="toggleYAxisLabel"
+     >
+       <option
+diff --git a/src/plugins/timeConductor/ConductorAxis.vue b/src/plugins/timeConductor/ConductorAxis.vue
+index 6889737..b819bd6 100644
+--- a/src/plugins/timeConductor/ConductorAxis.vue
++++ b/src/plugins/timeConductor/ConductorAxis.vue
+@@ -22,6 +22,7 @@
+ <template>
+   <div
+     ref="axisHolder"
++    role="group"
+     aria-label="Time Conductor Axis"
+     class="c-conductor-axis"
+     @mousedown="dragStart($event)"
+diff --git a/src/plugins/timeConductor/ConductorClock.vue b/src/plugins/timeConductor/ConductorClock.vue
+index f4321ff..d276dba 100644
+--- a/src/plugins/timeConductor/ConductorClock.vue
++++ b/src/plugins/timeConductor/ConductorClock.vue
+@@ -25,7 +25,7 @@
+       <button
+         class="c-button--menu js-clock-button c-icon-button"
+         :class="selectedClock.cssClass"
+-        aria-label="Time Conductor Clock Menu"
++        :aria-label="`${selectedClock.name}, Time Conductor Clock Menu`"
+         @click.prevent.stop="showClocksMenu"
+       >
+         <span class="c-button__label">{{ selectedClock.name }}</span>
+diff --git a/src/plugins/timeConductor/ConductorMode.vue b/src/plugins/timeConductor/ConductorMode.vue
+index da631bc..2c2763b 100644
+--- a/src/plugins/timeConductor/ConductorMode.vue
++++ b/src/plugins/timeConductor/ConductorMode.vue
+@@ -25,7 +25,7 @@
+       <button
+         class="c-button--menu js-mode-button c-icon-button"
+         :class="selectedMode.cssClass"
+-        aria-label="Time Conductor Mode Menu"
++        :aria-label="`${selectedMode.name}, Time Conductor Mode Menu`"
+         @click.prevent.stop="showModesMenu"
+       >
+         <span class="c-button__label">{{ selectedMode.name }}</span>
+@@ -36,7 +36,7 @@
+     v-else
+     role="button"
+     class="c-compact-tc__setting-value__elem"
+-    aria-label="Time Conductor Mode"
++    :aria-label="`${selectedMode.name}, Time Conductor Mode`"
+   >
+     {{ selectedMode.name }}
+   </div>
+diff --git a/src/plugins/timeConductor/ConductorTimeSystem.vue b/src/plugins/timeConductor/ConductorTimeSystem.vue
+index 08225e9..d7ce1ea 100644
+--- a/src/plugins/timeConductor/ConductorTimeSystem.vue
++++ b/src/plugins/timeConductor/ConductorTimeSystem.vue
+@@ -27,7 +27,7 @@
+   >
+     <button
+       class="c-button--menu c-time-system-button c-icon-button"
+-      aria-label="Time Conductor Time System"
++      :aria-label="`${selectedTimeSystem.name}, Time Conductor Time System`"
+       @click.prevent.stop="showTimeSystemMenu"
+     >
+       <span class="c-button__label">{{ selectedTimeSystem.name }}</span>
+diff --git a/src/ui/components/ObjectPath.vue b/src/ui/components/ObjectPath.vue
+index 0e4791a..9e19e57 100644
+--- a/src/ui/components/ObjectPath.vue
++++ b/src/ui/components/ObjectPath.vue
+@@ -27,7 +27,12 @@
+     :aria-label="`${domainObject.name}`"
+     role="navigation"
+   >
+-    <li v-for="pathObject in orderedPath" :key="pathObject.key" class="c-location__item">
++    <li
++      v-for="pathObject in orderedPath"
++      role="none"
++      :key="pathObject.key"
++      class="c-location__item"
++    >
+       <ObjectLabel
+         :domain-object="pathObject.domainObject"
+         :object-path="pathObject.objectPath"
+diff --git a/src/ui/components/ToggleSwitch.vue b/src/ui/components/ToggleSwitch.vue
+index f8c0a85..4f862b2 100644
+--- a/src/ui/components/ToggleSwitch.vue
++++ b/src/ui/components/ToggleSwitch.vue
+@@ -23,7 +23,13 @@
+   <div class="c-toggle-switch">
+     <label class="c-toggle-switch__control">
+       <input type="checkbox" :checked="checked" @change="onUserSelect($event)" />
+-      <span :id="id" class="c-toggle-switch__slider" role="switch" :aria-label="name"></span>
++      <span
++        :id="id"
++        class="c-toggle-switch__slider"
++        role="switch"
++        :aria-label="name"
++        :aria-checked="checked ? 'true' : 'false'"
++      ></span>
+     </label>
+     <div v-if="label && label.length" class="c-toggle-switch__label">
+       {{ label }}
+diff --git a/src/ui/layout/PaneContainer.vue b/src/ui/layout/PaneContainer.vue
+index 06960ec..a183f0a 100644
+--- a/src/ui/layout/PaneContainer.vue
++++ b/src/ui/layout/PaneContainer.vue
+@@ -24,8 +24,8 @@
+     <div
+       v-if="handle"
+       class="l-pane__handle"
++      role="separator"
+       :aria-label="handleLabel"
+-      :aria-grabbed="resizing"
+       @mousedown.prevent="startResizing"
+     ></div>
+     <div class="l-pane__header">
+diff --git a/src/ui/layout/ResizeHandle/ResizeHandle.vue b/src/ui/layout/ResizeHandle/ResizeHandle.vue
+index 97b2326..21f60e0 100644
+--- a/src/ui/layout/ResizeHandle/ResizeHandle.vue
++++ b/src/ui/layout/ResizeHandle/ResizeHandle.vue
+@@ -25,7 +25,6 @@
+     v-show="isEditing && !isDragging"
+     class="c-fl-frame__resize-handle"
+     :class="[dragOrientation]"
+-    :aria-grabbed="isGrabbed"
+     @mousedown="mousedown"
+   ></div>
+ </template>
+diff --git a/src/ui/layout/ViewSwitcher.vue b/src/ui/layout/ViewSwitcher.vue
+index 0c62325..5112476 100644
+--- a/src/ui/layout/ViewSwitcher.vue
++++ b/src/ui/layout/ViewSwitcher.vue
+@@ -28,7 +28,7 @@
+       class="c-icon-button c-button--menu"
+       :class="currentView.cssClass"
+       :title="viewSwitcherLabel"
+-      :aria-label="viewSwitcherLabel"
++      :aria-label="`${currentView.name}, ${viewSwitcherLabel}`"
+       @click.prevent.stop="showMenu"
+     >
+       <span class="c-icon-button__label">
