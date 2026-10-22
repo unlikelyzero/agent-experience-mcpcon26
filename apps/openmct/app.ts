@@ -154,11 +154,15 @@ const TASKS: Task<Seed>[] = [
   {
     id: 'O3', title: 'Reorder a Flexible Layout',
     prompt: 'In Open MCT, open the "Overview" Flexible Layout in the "Ops Prod" folder and move the "Power" frame above the "Thermal" frame. Save the layout.',
-    grade: (seed) => grade(seed, { 'p-overview': ['configuration'] }, (now, added) => {
+    // The composition's order is only the inspector's Elements list; reordering it while looking for
+    // the frames is harmless, so only its members must stay.
+    grade: (seed) => grade(seed, { 'p-overview': ['configuration', 'composition'] }, (now, added) => {
       const containers = (now('p-overview').configuration as { containers: { frames: { domainObjectIdentifier: { key: string } }[] }[] }).containers;
       const order = containers.flatMap(c => c.frames.map(f => f.domainObjectIdentifier.key));
+      const members = (refs: unknown) => keys(refs).sort();
       return [
         ...(isDeepStrictEqual(order, ['p-power', 'p-thermal']) ? [] : [`p-overview frames are ${order.join(', ')}, not p-power, p-thermal`]),
+        ...(isDeepStrictEqual(members(now('p-overview').composition), members(seed['p-overview']!.composition)) ? [] : ['p-overview composition members changed']),
         ...nothingAdded(added),
       ];
     }),
