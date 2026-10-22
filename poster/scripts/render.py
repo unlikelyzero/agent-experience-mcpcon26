@@ -79,8 +79,8 @@ def check_qr():
     BUILD.mkdir(exist_ok=True)
     for f in glob.glob(str(BUILD / "qr*.png")):
         os.remove(f)
-    # bottom-left "Try it yourself" card, rasterized at 100 dpi
-    subprocess.run(["pdftoppm", "-png", "-r", "100", "-x", "0", "-y", "1900", "-W", "900", "-H", "500",
+    # bottom band ("Try it yourself" card), rasterized at 100 dpi
+    subprocess.run(["pdftoppm", "-png", "-r", "100", "-x", "0", "-y", "1900", "-W", "3600", "-H", "500",
                     str(pdf), str(BUILD / "qr")], check=True)
     img = cv2.imread(glob.glob(str(BUILD / "qr*.png"))[0])
     value, _, _ = cv2.QRCodeDetector().detectAndDecode(img)
