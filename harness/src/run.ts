@@ -132,6 +132,10 @@ async function runOne(app: AppAdapter, task: Task, tier: Tier, model: string, ru
   const m = parseStreamJson(result.transcript);
   // An error before the agent did anything (expired login, network) is not a task failure.
   if (m.isError && m.toolCalls === 0 && m.outputTokens === 0) throw new Error(`claude failed before acting (${runDir}): ${m.finalText}`);
+  // Or one whose browser server never connected: the agent had no way to act at all.
+  const failedMcp = result.transcript.split('\n').map(l => { try { return JSON.parse(l); } catch { return null; } })
+    .find(e => e?.type === 'system' && e.subtype === 'init')?.mcp_servers?.find((m: { status: string }) => m.status !== 'connected');
+  if (failedMcp) throw new Error(`browser server ${failedMcp.name} ${failedMcp.status} (${runDir})`);
   // Same for one that dropped mid-run: it measured the network, not the app. Rerun the cell.
   if (m.isError && m.finalText.startsWith('API Error')) throw new Error(`claude lost the API mid-run (${runDir}): ${m.finalText}`);
   const grade = await task.grade(seed, m.finalText);
