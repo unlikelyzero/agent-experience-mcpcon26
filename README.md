@@ -1,12 +1,16 @@
 <div align="center">
 
-# Agent Experience (AX)
+<img src="docs/assets/banner.svg" alt="AGNTCon + MCPCon North America 2026 · Agent Experience (AX): accessibility is your agent's interface · John Hill" width="100%">
 
-### Accessibility is your agent's interface.
+[![AGNTCon + MCPCon North America 2026](https://img.shields.io/badge/AGNTCon_%2B_MCPCon-North_America_2026-21233A?style=for-the-badge)](https://events.linuxfoundation.org/agntcon-mcpcon-north-america/)
+[![Agentic AI Foundation](https://img.shields.io/badge/Agentic_AI_Foundation-poster_session-00718D?style=for-the-badge)](https://aaif.io/)
+
+[![Model Context Protocol](https://img.shields.io/badge/Model_Context_Protocol-Playwright_MCP_0.0.83-00ACD6?style=flat-square)](https://modelcontextprotocol.io)
+[![WCAG 2.2 AA](https://img.shields.io/badge/WCAG-2.2_AA-9ADCEE?style=flat-square&labelColor=21233A)](https://www.w3.org/TR/WCAG22/)
+[![WAI-ARIA APG](https://img.shields.io/badge/WAI--ARIA-APG_patterns-9ADCEE?style=flat-square&labelColor=21233A)](https://www.w3.org/WAI/ARIA/apg/)
+[![tiers](https://github.com/unlikelyzero/agent-experience-mcpcon26/actions/workflows/tiers.yml/badge.svg)](https://github.com/unlikelyzero/agent-experience-mcpcon26/actions/workflows/tiers.yml)
 
 **The same agent, doing the same task, on the same pixels, does better as the markup gets more accessible.**
-
-Companion repo for the AGNTCon + MCPCon North America 2026 poster by [John Hill](https://github.com/unlikelyzero).
 
 [Results](#evals-are-the-outcome) · [Run it](#run-every-app-in-every-tier) · [Design](docs/DESIGN.md) · [Poster source](poster/)
 
