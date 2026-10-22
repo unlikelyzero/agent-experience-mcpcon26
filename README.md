@@ -115,18 +115,20 @@ Each tier is a patch on a real open-source app that changes markup and nothing e
 
 ## Results
 
-Three apps, four models, three runs of every task at every tier: 504 graded runs. Every run is graded by reading the app's own state (its API, the Kubernetes cluster, or its database). The agent's claim of success isn't trusted. Costs are list prices.
+Four apps, four models, three runs of every task at every tier: 684 graded runs. Every run is graded by reading the app's own state (its API, the Kubernetes cluster, its database, or a log of the bookings the page confirmed). The agent's claim of success isn't trusted. Costs are list prices.
 
-### Div soup costs every model more
+### Div soup costs more, except for Opus on the smallest page
 
 Extra tokens per successful task on div soup, compared with the WCAG tier:
 
-| Model | what-iff | Headlamp | Open MCT |
-|:---|---:|---:|---:|
-| Claude Opus 5.5 | +16% | +44% | +23% |
-| Claude Sonnet 5.5 | +22% | +54% | +19% |
-| Claude Haiku 4.5 | +95% | +102% | +147% |
-| Claude Haiku 5.5 | +22% | +16% | +9% |
+| Model | what-iff | Headlamp | Open MCT | webmcp-demo |
+|:---|---:|---:|---:|---:|
+| Claude Opus 5.5 | +16% | +44% | +23% | −12% |
+| Claude Sonnet 5.5 | +22% | +54% | +19% | +12% |
+| Claude Haiku 4.5 | +95% | +102% | +147% | +84% |
+| Claude Haiku 5.5 | +22% | +16% | +9% | +10% |
+
+On the three full apps, div soup cost every model 9–147% more. webmcp-demo is one static page with two small booking widgets, and there Opus spent 12% less on div soup. A div-soup snapshot is shorter, because the calendar flattens into one line of day numbers, and the page is simple enough that Opus scraped it in about 9 tool calls a run. The other three models still paid more, Haiku 4.5 most of all. Missing semantics cost more as the app grows, and a strong model can absorb them on a page this small.
 
 ### Existing evals barely notice
 
@@ -135,6 +137,7 @@ Extra tokens per successful task on div soup, compared with the WCAG tier:
 | what-iff | 22 | 0 | 0 |
 | Headlamp | 2 | 0 | 0 |
 | Open MCT | 49 | 0 | 0 |
+| webmcp-demo | 28 | 0 | 0 |
 
 A `<div>` with a click handler gives axe nothing to flag. On Headlamp, axe finds two WCAG violations in div soup while every model spends 16–102% more to get the same work done.
 
@@ -142,14 +145,14 @@ A `<div>` with a click handler gives axe nothing to flag. On Headlamp, axe finds
 
 Tokens per successful task on the patterns tier, compared with WCAG:
 
-| Model | what-iff | Headlamp | Open MCT |
-|:---|---:|---:|---:|
-| Claude Opus 5.5 | −7% | −4% | 0% |
-| Claude Sonnet 5.5 | −5% | +2% | +17% |
-| Claude Haiku 4.5 | −16% | +51% | +44% |
-| Claude Haiku 5.5 | +22% | +44% | −14% |
+| Model | what-iff | Headlamp | Open MCT | webmcp-demo |
+|:---|---:|---:|---:|---:|
+| Claude Opus 5.5 | −7% | −4% | 0% | −9% |
+| Claude Sonnet 5.5 | −5% | +2% | +17% | +17% |
+| Claude Haiku 4.5 | −16% | +51% | +44% | +14% |
+| Claude Haiku 5.5 | +22% | +44% | −14% | −9% |
 
-The APG patterns and agent hints built here helped on what-iff and were neutral to costly elsewhere, most of all for the two Haiku models, which also took more screenshots on that tier. Compliance captured most of the benefit.
+The APG patterns and agent hints built here helped on what-iff, and on webmcp-demo for Opus and Haiku 5.5. Elsewhere they were neutral to costly, most of all for the two Haiku models, which also took more screenshots on that tier. On webmcp-demo the fuller names also make every snapshot longer. Compliance captured most of the benefit.
 
 ### Completion
 
@@ -158,6 +161,7 @@ The APG patterns and agent hints built here helped on what-iff and were neutral 
 | what-iff | 90% | 98% | 100% | 2, all div soup |
 | Headlamp | 97% | 100% | 100% | 2, all div soup |
 | Open MCT | 93% | 90% | 95% | 3, all WCAG |
+| webmcp-demo | 100% | 98% | 100% | 1, WCAG |
 
 Open MCT's WCAG dip is one task. Reordering frames in a Flexible Layout is a drag, and only the patterns tier adds a keyboard alternative. WCAG 2.5.7 requires a single-pointer alternative to dragging, but axe can't test for it, so an axe-clean tier still shipped without one. Haiku 4.5 failed it three times there and claimed success each time.
 
@@ -223,7 +227,7 @@ Described tools made the markup irrelevant and the task cheap. Undescribed tools
 
 </details>
 
-Per-run data, methods and limits for each app: [what-iff](results/published/what-iff/README.md) · [Headlamp](results/published/headlamp/README.md) · [Open MCT](results/published/openmct/README.md).
+Per-run data, methods and limits for each app: [what-iff](results/published/what-iff/README.md) · [Headlamp](results/published/headlamp/README.md) · [Open MCT](results/published/openmct/README.md) · [webmcp-demo](results/published/webmcp-demo/README.md).
 
 ## Takeaway
 
@@ -236,6 +240,7 @@ Per-run data, methods and limits for each app: [what-iff](results/published/what
 | [what-iff](https://github.com/theimaginaryfoundation/what-iff) | AI assistant · Angular, Go | Measured: 4 tasks, 144 runs. Tiers, seed, graders and runner are on the [`ax-tiers`](https://github.com/neupenguin/what-iff/tree/ax-tiers) branch of a fork. |
 | [Headlamp](https://github.com/kubernetes-sigs/headlamp) | Kubernetes UI · React, MUI | Measured: 5 tasks graded with kubectl, 180 runs. Tier patches pass the pixel and axe gates. |
 | [Open MCT](https://github.com/nasa/openmct) | Mission control · Vue | Measured: 5 tasks graded from CouchDB, 180 runs. Tier patches pass the pixel and axe gates. |
+| [webmcp-demo](https://github.com/sdras/webmcp-demo) | WebMCP explainer · vanilla JS | Measured: 5 tasks graded from a booking log, 180 runs. Tier patches pass the pixel and axe gates. |
 
 ## Run every app in every tier
 
@@ -251,6 +256,7 @@ alias ax='node dist/harness/src/cli.js'
 |---|---|---|---|
 | Headlamp | `ax serve --app headlamp --tier div-soup` → http://localhost:4466 | `--tier wcag` → http://localhost:4467 | `--tier patterns` → http://localhost:4468 |
 | Open MCT | `ax serve --app openmct --tier div-soup` → http://localhost:8090 | `--tier wcag` → http://localhost:8091 | `--tier patterns` → http://localhost:8092 |
+| webmcp-demo | `ax serve --app webmcp-demo --tier div-soup` → http://localhost:8190 | `--tier wcag` → http://localhost:8191 | `--tier patterns` → http://localhost:8192 |
 | what-iff | http://localhost:4200/memories?ax=3 | http://localhost:4200/memories?ax=0 | http://localhost:4200/memories?ax=4 |
 
 ### Headlamp
@@ -272,6 +278,15 @@ ax prepare --app openmct
 ax seed --app openmct                # starts CouchDB on :5984 and seeds it
 ax serve --app openmct --tier div-soup
 ax grade --app openmct --task O1
+```
+
+### webmcp-demo
+
+```bash
+ax prepare --app webmcp-demo
+ax seed --app webmcp-demo            # empties the booking log
+ax serve --app webmcp-demo --tier wcag
+ax grade --app webmcp-demo --task M1 # after booking in the browser
 ```
 
 ### what-iff

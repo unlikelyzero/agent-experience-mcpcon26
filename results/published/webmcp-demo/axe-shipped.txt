@@ -1,0 +1,15 @@
+wcag: wcag 14, visual 91, best-practice 0 (nodes)  FAIL: must be WCAG-clean
+  top            wcag          aria-required-children ×2  Certain ARIA roles must contain particular children
+  top            visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  compare        wcag          aria-required-children ×2  Certain ARIA roles must contain particular children
+  compare        visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  widgets        wcag          aria-required-children ×2  Certain ARIA roles must contain particular children
+  widgets        visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  tools          wcag          aria-required-children ×2  Certain ARIA roles must contain particular children
+  tools          visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  next-month     wcag          aria-required-children ×2  Certain ARIA roles must contain particular children
+  next-month     visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  day-picked     wcag          aria-required-children ×2  Certain ARIA roles must contain particular children
+  day-picked     visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  slot-picked    wcag          aria-required-children ×2  Certain ARIA roles must contain particular children
+  slot-picked    visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds

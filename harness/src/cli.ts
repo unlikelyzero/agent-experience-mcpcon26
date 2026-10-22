@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { headlamp } from '../../apps/headlamp/app.js';
 import { openmct } from '../../apps/openmct/app.js';
+import { webmcpDemo } from '../../apps/webmcp-demo/app.js';
 import { whatIff } from '../../apps/what-iff/app.js';
 import { evalAxe } from './eval-axe.js';
 import { evalPixels } from './eval-pixels.js';
@@ -13,7 +14,7 @@ import type { DriverName } from './drivers.js';
 import { ROOT, diff, exportPatches, parseTier, prepare, tierDir, workDir } from './prepare.js';
 import { TIERS, type AppAdapter } from './types.js';
 
-const APPS: Record<string, AppAdapter> = { [headlamp.name]: headlamp, [openmct.name]: openmct, [whatIff.name]: whatIff };
+const APPS: Record<string, AppAdapter> = { [headlamp.name]: headlamp, [openmct.name]: openmct, [webmcpDemo.name]: webmcpDemo, [whatIff.name]: whatIff };
 
 const USAGE = `usage:
   ax prepare --app <app> [--force]

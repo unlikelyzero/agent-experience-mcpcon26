@@ -1,0 +1,38 @@
+div-soup: wcag 28, visual 91, best-practice 336 (nodes)
+  top            visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  top            wcag          label ×4  Form elements must have labels
+  top            best-practice region ×48  All page content should be contained by landmarks
+  compare        visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  compare        wcag          label ×4  Form elements must have labels
+  compare        best-practice region ×48  All page content should be contained by landmarks
+  widgets        visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  widgets        wcag          label ×4  Form elements must have labels
+  widgets        best-practice region ×48  All page content should be contained by landmarks
+  tools          visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  tools          wcag          label ×4  Form elements must have labels
+  tools          best-practice region ×48  All page content should be contained by landmarks
+  next-month     visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  next-month     wcag          label ×4  Form elements must have labels
+  next-month     best-practice region ×48  All page content should be contained by landmarks
+  day-picked     visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  day-picked     wcag          label ×4  Form elements must have labels
+  day-picked     best-practice region ×48  All page content should be contained by landmarks
+  slot-picked    visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  slot-picked    wcag          label ×4  Form elements must have labels
+  slot-picked    best-practice region ×48  All page content should be contained by landmarks
+wcag: wcag 0, visual 91, best-practice 0 (nodes)  WCAG-clean
+  top            visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  compare        visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  widgets        visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  tools          visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  next-month     visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  day-picked     visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  slot-picked    visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+patterns: wcag 0, visual 91, best-practice 0 (nodes)  WCAG-clean
+  top            visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  compare        visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  widgets        visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  tools          visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  next-month     visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  day-picked     visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds
+  slot-picked    visual        color-contrast ×13  Elements must meet minimum color contrast ratio thresholds

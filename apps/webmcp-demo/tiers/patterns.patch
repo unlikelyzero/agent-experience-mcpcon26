@@ -1,0 +1,327 @@
+diff --git a/app.js b/app.js
+index 0f41407..ddc86e2 100644
+--- a/app.js
++++ b/app.js
+@@ -78,43 +78,60 @@
+     `;
+     root.appendChild(head);
+ 
++    // Which panel this widget sits in; repeated controls carry it in their names.
++    const panel = root.id === "widget-with" ? "With WebMCP" : "Without WebMCP";
++    const tid = (s) => `${root.id === "widget-with" ? "with" : "without"}-${s}`;
++    root.setAttribute("role", "region");
++    root.setAttribute("aria-label", `Booking widget (${panel})`);
++    root.dataset.testid = tid("booking");
++
+     // Month switcher
+     const monthBar = document.createElement("div");
+     monthBar.className = "w-month";
+     monthBar.innerHTML = `
+-      <button type="button" aria-label="Previous month" data-nav="prev">‹</button>
+-      <span class="w-month-label"></span>
+-      <button type="button" aria-label="Next month" data-nav="next">›</button>
++      <button type="button" aria-label="Previous month" data-nav="prev" data-testid="${tid("prev-month")}">‹</button>
++      <span class="w-month-label" id="${root.id}-month" aria-live="polite"></span>
++      <button type="button" aria-label="Next month" data-nav="next" data-testid="${tid("next-month")}">›</button>
+     `;
+     root.appendChild(monthBar);
+ 
+-    // Calendar grid
++    // Calendar: the APG date-picker grid. One tab stop (the focused day); arrows, Home/End and
++    // PageUp/PageDown move it, crossing months; Enter/Space pick the day.
+     const cal = document.createElement("div");
+     cal.className = "w-cal";
+     cal.setAttribute("role", "grid");
+-    cal.setAttribute("aria-label", "Available booking dates");
++    cal.setAttribute("aria-labelledby", `${root.id}-month`);
++    cal.setAttribute("aria-description", "Days with open times are enabled. Arrow keys move between days, Page Up and Page Down change month.");
++    cal.dataset.testid = tid("calendar");
+     root.appendChild(cal);
+ 
+     // Slots container
+     const slotsLabel = document.createElement("p");
+     slotsLabel.className = "w-sub";
++    slotsLabel.id = `${root.id}-times-label`;
+     slotsLabel.style.marginBottom = "-8px";
+     slotsLabel.textContent = "Available times — pick a date first";
+     root.appendChild(slotsLabel);
+ 
++    // Times: the APG radio group. One tab stop; arrows move and pick among open times.
+     const slots = document.createElement("div");
+     slots.className = "w-slots";
++    slots.setAttribute("role", "radiogroup");
++    slots.setAttribute("aria-labelledby", slotsLabel.id);
++    slots.dataset.testid = tid("times");
+     root.appendChild(slots);
+ 
+     // Form
+     const form = document.createElement("form");
+     form.className = "w-form";
+     form.setAttribute("novalidate", "");
++    form.setAttribute("aria-label", `Your details (${panel})`);
+     form.innerHTML = `
+-      <label>Name<input type="text" name="name" autocomplete="name" /></label>
+-      <label>Email<input type="email" name="email" autocomplete="email" /></label>
+-      <button type="submit" class="w-confirm" disabled>Confirm booking</button>
+-      <div class="w-success" role="status"></div>
++      <label>Name<input type="text" name="name" autocomplete="name" aria-required="true" data-testid="${tid("name")}" /></label>
++      <label>Email<input type="email" name="email" autocomplete="email" aria-required="true" data-testid="${tid("email")}" /></label>
++      <button type="submit" class="w-confirm" disabled aria-label="Confirm booking (${panel})" data-testid="${tid("confirm")}"
++        aria-description="Books the selected day and time for this name and email in the ${panel} widget. Enabled once all four are set.">Confirm booking</button>
++      <div class="w-success" role="status" data-testid="${tid("success")}"></div>
+     `;
+     root.appendChild(form);
+ 
+@@ -123,27 +140,47 @@
+     const submitBtn = form.querySelector(".w-confirm");
+     const successEl = form.querySelector(".w-success");
+ 
++    const DOW_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
++    const bookable = (iso) => !!AVAILABILITY[iso] && new Date(iso + "T00:00") >= TODAY;
++    // The day holding the grid's tab stop, and whether the next render should move focus to it.
++    let focusDate = null;
++    let refocus = null;
++
+     // ----- render functions ----------------------------------
+     function renderMonth() {
+       const m = state.viewMonth.getMonth();
+       const y = state.viewMonth.getFullYear();
+       monthBar.querySelector(".w-month-label").textContent = `${MONTHS[m]} ${y}`;
++      const prev = new Date(y, m - 1, 1), next = new Date(y, m + 1, 1);
++      monthBar.querySelector('[data-nav="prev"]').setAttribute("aria-description", `Shows ${MONTHS[prev.getMonth()]} ${prev.getFullYear()}`);
++      monthBar.querySelector('[data-nav="next"]').setAttribute("aria-description", `Shows ${MONTHS[next.getMonth()]} ${next.getFullYear()}`);
++
++      const firstDow = new Date(y, m, 1).getDay();
++      const daysInMonth = new Date(y, m + 1, 0).getDate();
++      const prevDays = new Date(y, m, 0).getDate();
++      const inMonth = (iso) => iso && iso.startsWith(`${y}-${pad2(m + 1)}-`);
++      if (!inMonth(focusDate)) {
++        const first = Array.from({ length: daysInMonth }, (_, i) => fmtISO(new Date(y, m, i + 1))).find(bookable);
++        focusDate = inMonth(state.selectedDate) ? state.selectedDate : first || fmtISO(new Date(y, m, 1));
++      }
+ 
+       cal.innerHTML = "";
+-      // DoW headers
++      // Rows are display: contents, so the cells stay items of the 7-column CSS grid.
++      let row = null;
++      // Rows get short names; named from their contents they would repeat every day's name.
++      const addRow = (name) => { row = document.createElement("div"); row.className = "w-row"; row.setAttribute("role", "row"); row.setAttribute("aria-label", name); cal.appendChild(row); };
++      addRow("Days of the week");
+       DOW_SHORT.forEach((d, i) => {
+         const el = document.createElement("div");
+         el.className = "w-dow";
+         el.textContent = d;
+-        el.setAttribute("aria-hidden", "true");
+-        cal.appendChild(el);
++        el.setAttribute("role", "columnheader");
++        el.setAttribute("aria-label", DOW_LONG[i]);
++        row.appendChild(el);
+       });
++      addRow(`Week 1 of ${MONTHS[m]}`);
+ 
+-      const firstDow = new Date(y, m, 1).getDay();
+-      const daysInMonth = new Date(y, m + 1, 0).getDate();
+-      const prevDays = new Date(y, m, 0).getDate();
+-
+-      // Leading days from previous month
++      // Leading days from previous month: empty cells to assistive tech.
+       for (let i = 0; i < firstDow; i++) {
+         const dn = prevDays - firstDow + 1 + i;
+         const cell = document.createElement("button");
+@@ -152,33 +189,78 @@
+         cell.textContent = dn;
+         cell.disabled = true;
+         cell.tabIndex = -1;
++        cell.setAttribute("role", "gridcell");
+         cell.setAttribute("aria-hidden", "true");
+-        cal.appendChild(cell);
++        row.appendChild(cell);
+       }
+ 
+-      // Days in this month
++      // Days in this month. Each is a gridcell button: Enter/Space and clicks pick it.
+       for (let d = 1; d <= daysInMonth; d++) {
+         const date = new Date(y, m, d);
+         const iso = fmtISO(date);
++        if (date.getDay() === 0 && d > 1) addRow(`Week ${cal.children.length} of ${MONTHS[m]}`);
+         const cell = document.createElement("button");
+         cell.type = "button";
+         cell.className = "w-day";
+         cell.textContent = d;
+         cell.dataset.date = iso;
+-        cell.setAttribute("aria-label", fmtLongDate(date));
++        cell.dataset.testid = tid(`day-${iso}`);
++        cell.id = `${root.id}-day-${iso}`;
++        cell.setAttribute("role", "gridcell");
++        cell.setAttribute("aria-label", `${DOW_LONG[date.getDay()]}, ${MONTHS[m]} ${d}, ${y}`);
+ 
+         const has = !!AVAILABILITY[iso];
+         const inPast = date < TODAY;
+-        if (has && !inPast) cell.classList.add("has-slots");
+-        else cell.disabled = true;
++        if (has && !inPast) {
++          cell.classList.add("has-slots");
++          cell.setAttribute("aria-description", `Open times: ${AVAILABILITY[iso].map(fmtTime).join(", ")}`);
++        } else {
++          cell.disabled = true;
++          cell.setAttribute("aria-description", inPast ? "In the past" : "No open times");
++        }
+ 
+         if (state.selectedDate === iso) cell.classList.add("is-selected");
++        cell.setAttribute("aria-selected", String(state.selectedDate === iso));
++        cell.tabIndex = iso === focusDate ? 0 : -1;
+ 
+-        cell.addEventListener("click", () => selectDate(iso));
+-        cal.appendChild(cell);
++        // A keyboard click (detail 0) keeps focus on the day through the re-render.
++        cell.addEventListener("click", (e) => { focusDate = iso; if (!e.detail) refocus = "day"; selectDate(iso); });
++        row.appendChild(cell);
+       }
++      if (refocus === "day") { refocus = null; cal.querySelector(`[data-date="${focusDate}"]`)?.focus(); }
+     }
+ 
++    // Days without open times keep the native disabled attribute (their look depends on it), and
++    // a disabled button can't take focus, so the keys skip them: each key moves to the nearest
++    // bookable day in its direction, and PageUp/PageDown to the first bookable day of a month.
++    cal.addEventListener("keydown", (e) => {
++      const from = e.target.dataset.date ?? focusDate;
++      if (!from) return;
++      const d = new Date(from + "T00:00");
++      const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7, Home: -1, End: 1 }[e.key];
++      const month = { PageUp: -1, PageDown: 1 }[e.key];
++      if (!step && !month) return;
++      e.preventDefault();
++      let found = null;
++      if (month) {
++        const first = new Date(d.getFullYear(), d.getMonth() + month, 1);
++        for (let i = 0; i < 31 && !found; i++) { const c = new Date(first); c.setDate(i + 1); if (c.getMonth() === first.getMonth() && bookable(fmtISO(c))) found = c; }
++        if (!found) found = first;
++      } else {
++        // Home/End run to the last bookable day of the week in their direction.
++        for (let i = 1; i <= 70; i++) {
++          const c = new Date(d); c.setDate(d.getDate() + step * i);
++          if ((e.key === "Home" || e.key === "End") && Math.abs(c.getDay() - d.getDay()) !== i) break;
++          if (bookable(fmtISO(c))) { found = c; if (e.key !== "Home" && e.key !== "End") break; }
++        }
++      }
++      if (!found) return;
++      focusDate = fmtISO(found);
++      state.viewMonth = new Date(found.getFullYear(), found.getMonth(), 1);
++      refocus = "day";
++      renderMonth();
++    });
++
+     function renderSlots() {
+       slots.innerHTML = "";
+       if (!state.selectedDate) {
+@@ -188,22 +270,44 @@
+       const date = new Date(state.selectedDate + "T00:00");
+       slotsLabel.textContent = `Available times — ${fmtLongDate(date)}`;
+       const list = AVAILABILITY[state.selectedDate] || [];
++      const tabStop = state.selectedSlot || list[0];
+       // render all 6 slots; disable unavailable
+       ALL_SLOTS.forEach((t) => {
+         const btn = document.createElement("button");
+         btn.type = "button";
+         btn.className = "w-slot";
+         btn.dataset.time = t;
++        btn.dataset.testid = tid(`time-${t}`);
+         btn.textContent = fmtTime(t);
++        btn.setAttribute("role", "radio");
++        btn.setAttribute("aria-label", `${fmtTime(t)}, ${fmtLongDate(date)}`);
++        btn.setAttribute("aria-checked", String(state.selectedSlot === t));
+         const available = list.includes(t);
+-        if (!available) btn.disabled = true;
++        if (!available) {
++          btn.disabled = true;
++          btn.setAttribute("aria-description", "Not available");
++        }
++        btn.tabIndex = t === tabStop ? 0 : -1;
+         if (state.selectedSlot === t) btn.classList.add("is-selected");
+-        btn.addEventListener("click", () => selectSlot(t));
++        btn.addEventListener("click", (e) => { if (!e.detail) refocus = "time"; selectSlot(t); });
+         slots.appendChild(btn);
+       });
++      if (refocus === "time") { refocus = null; slots.querySelector(`[data-time="${state.selectedSlot}"]`)?.focus(); }
+     }
+ 
++    // Arrows move to the next open time and pick it, wrapping (APG radio group).
++    slots.addEventListener("keydown", (e) => {
++      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
++      const list = AVAILABILITY[state.selectedDate] || [];
++      if (!step || !list.length) return;
++      e.preventDefault();
++      const at = list.indexOf(state.selectedSlot ?? e.target.dataset.time);
++      refocus = "time";
++      selectSlot(list[(at + step + list.length) % list.length]);
++    });
++
+     function selectDate(iso) {
++      focusDate = iso;
+       state.selectedDate = iso;
+       state.selectedSlot = null;
+       state.confirmed = null;
+diff --git a/index.html b/index.html
+index 3fae92b..2a92a14 100644
+--- a/index.html
++++ b/index.html
+@@ -62,19 +62,21 @@
+           Left: scrape the DOM. Right: call a tool.
+         </p>
+         <div class="run-bar">
+-          <button class="btn btn-run" id="run-sim">
++          <button class="btn btn-run" id="run-sim" data-testid="run-sim"
++            aria-description="Plays a scripted demo that books Tuesday, November 3 at 2:00 PM for Sarah Drasner in both widgets.">
+             <span class="run-icon" aria-hidden="true">▶</span>
+             <span class="run-label">Run agent: “Book me Tuesday at 2pm”</span>
+           </button>
+-          <button class="btn btn-ghost btn-reset" id="reset-sim" aria-label="Reset demo">Reset</button>
++          <button class="btn btn-ghost btn-reset" id="reset-sim" aria-label="Reset demo" data-testid="reset-sim"
++            aria-description="Clears both booking widgets, including any confirmed booking.">Reset</button>
+         </div>
+       </header>
+ 
+       <div class="split">
+         <!-- WITHOUT -->
+-        <article class="panel panel--without" data-mode="without">
++        <article class="panel panel--without" data-mode="without" aria-labelledby="panel-without-tag">
+           <header class="panel-head">
+-            <span class="panel-tag panel-tag--warn">Without WebMCP</span>
++            <span class="panel-tag panel-tag--warn" id="panel-without-tag">Without WebMCP</span>
+             <h3>Agent must scrape</h3>
+             <p>It guesses meaning from <code>aria-*</code>, classnames, and shape.</p>
+           </header>
+@@ -101,9 +103,9 @@
+         </div>
+ 
+         <!-- WITH -->
+-        <article class="panel panel--with" data-mode="with">
++        <article class="panel panel--with" data-mode="with" aria-labelledby="panel-with-tag">
+           <header class="panel-head">
+-            <span class="panel-tag panel-tag--ok">With WebMCP</span>
++            <span class="panel-tag panel-tag--ok" id="panel-with-tag">With WebMCP</span>
+             <h3>Agent calls tools</h3>
+             <p>The page declares typed capabilities. The agent just calls them.</p>
+           </header>
+@@ -120,7 +122,8 @@
+                 <span class="tools-title">Registered tools</span>
+                 <span class="tools-count" id="tools-count">0</span>
+               </div>
+-              <ul class="tools-list" id="tools-list"></ul>
++              <ul class="tools-list" id="tools-list" aria-label="Registered tools" data-testid="tools-list"
++                aria-description="Descriptions of the WebMCP tools this page registers. Their examples are not real bookings."></ul>
+               <div class="tool-call" id="tool-call" hidden>
+                 <div class="tool-call-head">Last call</div>
+                 <pre class="tool-call-body"><code id="tool-call-code"></code></pre>
+diff --git a/styles.css b/styles.css
+index 9cd0bf5..aec2895 100644
+--- a/styles.css
++++ b/styles.css
+@@ -635,6 +635,7 @@ h2 {
+   cursor: pointer;
+ }
+ .w-month-label { font-weight: 600; }
++.w-row { display: contents; }
+ 
+ .w-cal {
+   display: grid;

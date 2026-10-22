@@ -1,0 +1,43 @@
+diff --git a/app.js b/app.js
+index 0f41407..693b13a 100644
+--- a/app.js
++++ b/app.js
+@@ -91,7 +91,7 @@
+     // Calendar grid
+     const cal = document.createElement("div");
+     cal.className = "w-cal";
+-    cal.setAttribute("role", "grid");
++    cal.setAttribute("role", "group");
+     cal.setAttribute("aria-label", "Available booking dates");
+     root.appendChild(cal);
+ 
+@@ -100,10 +100,13 @@
+     slotsLabel.className = "w-sub";
+     slotsLabel.style.marginBottom = "-8px";
+     slotsLabel.textContent = "Available times — pick a date first";
++    slotsLabel.id = root.id + "-times-label";
+     root.appendChild(slotsLabel);
+ 
+     const slots = document.createElement("div");
+     slots.className = "w-slots";
++    slots.setAttribute("role", "group");
++    slots.setAttribute("aria-labelledby", slotsLabel.id);
+     root.appendChild(slots);
+ 
+     // Form
+@@ -173,6 +176,7 @@
+         else cell.disabled = true;
+ 
+         if (state.selectedDate === iso) cell.classList.add("is-selected");
++        cell.setAttribute("aria-pressed", String(state.selectedDate === iso));
+ 
+         cell.addEventListener("click", () => selectDate(iso));
+         cal.appendChild(cell);
+@@ -198,6 +202,7 @@
+         const available = list.includes(t);
+         if (!available) btn.disabled = true;
+         if (state.selectedSlot === t) btn.classList.add("is-selected");
++        btn.setAttribute("aria-pressed", String(state.selectedSlot === t));
+         btn.addEventListener("click", () => selectSlot(t));
+         slots.appendChild(btn);
+       });
