@@ -12,6 +12,7 @@ It measures that on open-source apps, one at a time:
 | **Headlamp** | Kubernetes UI | React 18 + MUI 5, Go 1.26, Node 22 | `kubernetes-sigs/headlamp` @ `3bb2082a0b30bd32e90c27b06d337f401ca7a596` |
 | **what-iff** | AI assistant | Angular 22, Go 1.27 | `theimaginaryfoundation/what-iff` @ `d50ee4f3184cd2560b1a94e6500ae3ab2f17fc3c` |
 | **Open MCT** | NASA mission-control telemetry UI | Vue 3, webpack, Node >=24.14.1 | `nasa/openmct` @ `e09bfaf47856b2b7ae2ea74334800b26fd27a41e` (master, 2026-10-06) |
+| **webmcp-demo** | WebMCP explainer with a booking widget | Vanilla HTML, CSS and JS; no build | `sdras/webmcp-demo` @ `45ddb9060b08fba6ce2a14f4240f77beaf404608` (main, 2026-07-19) |
 
 Results feed the poster's scorecard. Until `results/published/` holds real
 runs, the poster's numbers are illustrative and marked as such.
@@ -558,3 +559,141 @@ Running it against a tier, unchanged:
 - **Upstream's `AGENTS.md` asks for an `Assisted-by:` trailer.** That is for
   contributions to `nasa/openmct`; tier commits in `.work/` are local and
   don't carry it.
+
+## 11. webmcp-demo
+
+[`sdras/webmcp-demo`](https://github.com/sdras/webmcp-demo) is Sarah Drasner's one-page WebMCP
+explainer. It puts the same booking widget side by side twice: a "Without WebMCP" panel, where a
+scripted agent scrapes the DOM, and a "With WebMCP" panel, whose widget the page's WebMCP tools
+drive. The pin is `main` at `45ddb90` ("navigator -> document as per spec", 2026-07-19).
+
+### Stack and state
+
+- Three files: `index.html`, `styles.css` and `app.js`, an IIFE. No build step, no dependencies, no
+  tests. Fonts come from Google Fonts.
+- `createBookingWidget` builds each widget: month nav, a 7-column calendar (`role="grid"` of
+  `<button>`s, named "Tue, November 3"), six time-slot buttons (9, 10, 11 AM and 2, 3, 4 PM,
+  unavailable ones `disabled`), a Name/Email form, Confirm, and a `role="status"` success line
+  `Booked! <day> at <time> · BK-XXXXXX`. On load both widgets preselect the next Tuesday.
+- **State lives in a closure and nowhere else.** No storage, no server, no API. A booking is a
+  random `BK-` id in the widget's `state.confirmed`; a reload forgets it.
+- Availability is built from `new Date()` for eight weeks, weekdays only. The "pseudo-random"
+  formula reduces to the month: in November 9, 10, 2 and 3 are open, in December 9, 11, 2 and 3.
+  Tuesdays always have 2 PM.
+- **Run agent** plays a scripted demo that books Tuesday at 2 PM for "Sarah Drasner" in both
+  widgets. **Reset** clears both.
+
+### WebMCP integration
+
+`app.js` registers three tools with `document.modelContext.registerTool` when the API exists, and
+always mirrors them in `window.__webmcpDemoTools` for the on-page "Registered tools" panel:
+
+| Tool | Annotations | Does |
+|---|---|---|
+| `getAvailability(startDate, endDate)` | `readOnlyHint` | Open times by ISO date |
+| `bookSlot(date, time, name, email)` | — | Drives the **With WebMCP** widget: jumps to the month, picks day and slot, fills the form, confirms; returns the id. It doesn't check that the slot is open |
+| `cancelBooking(confirmationId)` | — | Resets the With widget if the id matches its booking; its description's example id is `BK-AB12CD` |
+
+There is no tool for the Without widget. Without `document.modelContext` the page says "This is a
+simulation" and the tools exist only in the page's own registry.
+
+**The driver and WebMCP.** `@playwright/mcp@0.0.83` collects tools a page registers through
+`document.modelContext` (on by default; `--no-webmcp` turns it off), exposes them as
+`webmcp_<name>` MCP tools, and adds `browser_webmcp_list`/`browser_webmcp_call` to its skill set.
+But the Chromium it launches (156.0.8078.4) has no `document.modelContext` unless started with
+`--enable-features=WebMCPTesting` (or `--enable-experimental-web-platform-features`); with the
+flag, the page reports the API as live. The matrix uses the driver as-is, so agents see no WebMCP
+tools and the page reports the simulation. `browser_evaluate` can still reach
+`window.__webmcpDemoTools`; the prompt tells the agent to use the browser only, which that is.
+
+### Build and serve
+
+- `build` does nothing. `serve` is a static server in the `ax` process on `127.0.0.1`, ports 8190
+  (`div-soup`), 8191 (`wcag`) and 8192 (`patterns`).
+- It injects a **test hook** ahead of `app.js` in the `index.html` response, the same in every
+  tier, so it is in no patch:
+  - It pins the page's "today" to 2026-11-02 12:00 UTC (a `Date` subclass offset from the real
+    clock; timers keep running). Tasks name fixed dates, and the open slots depend on the date.
+  - A `MutationObserver` watches each widget's `.w-success.is-visible code`. On a new id it posts
+    `{ panel, id, date, time, name, email }`, read from `.w-day.is-selected`, `.w-slot.is-selected`
+    and the `name`/`email` inputs, to `POST /__ax/booking`, which appends it to
+    `.work/webmcp-demo/bookings.jsonl`. Those classes, data attributes and input names are the same
+    in every tier. Bookings made by the WebMCP tools go through the same widget, so they are
+    caught the same way.
+- `seed()` empties `bookings.jsonl`. Each run's browser is new, so the page starts from scratch.
+
+### Tasks (M1–M5)
+
+A run passes only if `bookings.jsonl` holds exactly the expected booking, once: right widget,
+day, time, name and email (name trimmed, email case-insensitive). Any other booking, in either
+widget, fails it, including the Run agent demo's.
+
+| Task | Prompt (abridged) | Expected | Distractor |
+|---|---|---|---|
+| M1 | In the **With WebMCP** widget, book Thu Nov 12, 10:00 AM for Ada Lovelace | with, 2026-11-12, 10:00 | The identical Without widget |
+| M2 | In the **Without WebMCP** widget, book Thu Dec 3, 3:00 PM for Grace Hopper | without, 2026-12-03, 15:00 | Nov 3, the preselected day under the same number; 3 PM is open there too |
+| M3 | Which times can still be booked on Fri Nov 20? Book nothing; end with `TIMES: …` | `TIMES:` names 9, 10, 2 and 3, nothing else; no booking | 11 AM and 4 PM, drawn but disabled |
+| M4 | In the **With WebMCP** widget, book Wed Nov 25, 2:00 PM for Alan Turing; report the confirmation ID | with, 2026-11-25, 14:00, and the answer has the real id | `BK-AB12CD`, the example id in the Registered tools panel |
+| M5 | In the **Without WebMCP** widget, book Wed Nov 18, 11:00 AM for Katherine Johnson, or the earliest later time if 11 is taken | without, 2026-11-18, 14:00 | The disabled 11 AM slot |
+
+The `TIMES:` line accepts 12- or 24-hour times ("2:00 PM", "2 pm", "14:00").
+
+Checked by hand: a Playwright script drives the shipped page and each tier by mouse, does each
+task right and then wrong, and runs `ax grade`. Every grader passes on the right action and fails
+on its distractor (the other widget, Nov 3 for M2, listing the disabled times or booking for M3,
+the example id for M4, the disabled 11 AM and the Run agent demo for M5).
+
+### webmcp-demo catalog
+
+Every tier leaves the WebMCP code (`registerTool` and the three tool definitions) byte-identical
+to shipped. Each tier's commit in `.work/webmcp-demo/<tier>` lists what it touches.
+
+**`div-soup`** (`tiers/div-soup.patch`, 3 files)
+
+| Layer | Change |
+|---|---|
+| Names | "Previous/Next month", the calendar's name, every day's "Tue, November 3" (a day is just its number), "Reset demo"; `<label>` wrappers become divs, so the Name and Email inputs have no name |
+| Roles | Month nav, days, slots, Confirm, Run agent and Reset become `div.ax-btn`; `role="grid"` goes; the tools `ul`/`li` become divs; `header`, `nav`, `main`, `article` and `footer` become divs |
+| State | `disabled` on a div, which no accessibility API reads (it keeps the look and the annotation selectors); the day and slot click handlers aren't attached when disabled. Leading days lose `aria-hidden`. `role="status"` and `aria-live` go from the success line, the WebMCP status and the observation log |
+| Look | `:where(.ax-btn)` gives a div Chrome's button defaults at zero specificity; `:disabled` rules also match `[disabled]` |
+| Not done | Class suffixes: there is no build to suffix at |
+
+**`wcag`** (`tiers/wcag.patch`, `app.js` only). The shipped page has one WCAG-tagged axe rule over
+the seven `evalStates`, `aria-required-children`: `role="grid"` with button children and no rows,
+2 nodes per state. Beyond axe, shipped shows the selected day and time only by colour (1.3.1,
+4.1.2), and the slot buttons aren't tied to the date they belong to. The fixes:
+
+- the calendar becomes `role="group"`, keeping its name
+- `aria-pressed` on day and slot buttons mirrors `is-selected`
+- the slots are a `role="group"` labelled by their "Available times — <date>" caption
+
+Checked by hand: nothing needs dragging (2.5.7), and every visible label is in its accessible name
+(2.5.3: "Reset" in "Reset demo", the day number in "Thu, November 12"; ‹ and › are symbols).
+`color-contrast` (13 nodes per state) is reported, not fixed.
+
+**`patterns`** (`tiers/patterns.patch`, 3 files)
+
+| Widget | Pattern |
+|---|---|
+| Each widget | `role="region"` named "Booking widget (Without WebMCP)" / "(With WebMCP)"; the panels are `article`s named by their tags |
+| Calendar | APG date-picker grid: week rows (`display: contents`) named "Week n of <month>", columnheaders with full day names, gridcell buttons named "Thursday, November 12, 2026" with `aria-selected`, one tab stop; arrows, Home/End and PageUp/PageDown move between bookable days, crossing months. Named by the month label, which is `aria-live` |
+| Times | APG radio group named by the caption; radios "10:00 AM, Thu, November 12" with `aria-checked`, one tab stop, arrows pick the next open time |
+| Form | Named "Your details (<panel>)"; inputs `aria-required`; Confirm named "Confirm booking (<panel>)" |
+| Agent hints | `aria-description` on days (their open times, or "No open times"), unavailable times, month nav (the month it shows), Confirm, Run agent (it books Sarah Drasner on Nov 3 in both widgets), Reset and the tools list (descriptions, not bookings). `data-testid` on each widget's controls, prefixed `with-`/`without-` |
+
+Days with no open times keep native `disabled`, since their look depends on it, so the keys skip
+them. A keyboard activation keeps focus on the picked day or time through the re-render; a mouse
+click doesn't, as shipped. 20 scripted keyboard checks pass, including a booking made by keyboard
+alone. The app has no tests, so no name had to stay fixed.
+
+### webmcp-demo gotchas
+
+- **The page reads the clock.** Availability and the preselected Tuesday come from `new Date()`;
+  without the hook's pinned date the tasks would drift week to week.
+- **Most of the page is below the fold.** At 1280×800 `/` shows only the hero. The `evalStates`
+  use `#compare`, `#widget-without`, `#widget-with` and `#tools-panel` to scroll.
+- **The "Without" panel draws annotation boxes** over the left widget's controls, positioned from
+  `[data-date]:not([disabled])` and similar selectors. They don't take clicks. `div-soup` keeps a
+  `disabled` attribute on its divs so those selectors, and the pixels, stay the same.
+- **A disabled `<button>` can't take focus**, so the `patterns` grid skips days with no open times
+  instead of focusing them as the APG example does.
