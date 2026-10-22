@@ -16,26 +16,27 @@
 
 </div>
 
----
-
 ## One UI, four views
 
-Two builds of the same chat box render identical pixels. To an agent they are two very different apps.
+The two builds below render the same pixels. A person sees the same chat box in both. An agent driving the browser sees two different apps, because it works from the accessibility tree, not the screenshot.
 
-> **The task, both builds:** *"Send my message, then confirm it was saved."*
+The task, in both builds: *send my message, then confirm it was saved.*
 
-| View | What it is | Size on one real page (1280×800) |
-|---|---|---|
-| Screenshot | What a human or vision model sees | ≈1.4k tokens · 97 KB PNG |
-| DOM | What the browser holds | ≈101k tokens · 404 KB HTML |
-| **Accessibility tree** | **What agents read** | **≈13k tokens · 51 KB** |
-| Screen reader | Tab order plus live-region announcements | heard, not read |
+| View | What it shows | Size of one real page (1280×800) |
+|:---|:---|---:|
+| Screenshot | What a person or a vision model sees | ≈1.4k tokens · 97 KB |
+| DOM | What the browser holds | ≈101k tokens · 404 KB |
+| Accessibility tree | What a browser agent reads | ≈13k tokens · 51 KB |
+| Screen reader | Tab order and live-region announcements | heard, not read |
 
 <table>
+<thead>
 <tr>
-<th width="50%">❌ Div soup</th>
-<th width="50%">✅ WCAG</th>
+<th width="50%" align="left">Div soup</th>
+<th width="50%" align="left">WCAG</th>
 </tr>
+</thead>
+<tbody>
 <tr>
 <td>
 
@@ -88,66 +89,112 @@ Two builds of the same chat box render identical pixels. To an agent they are tw
 </td>
 </tr>
 <tr>
-<td>
+<td valign="top">
 
-**Task fails.** Only the placeholder names the box. Nothing is named *Send*, it can't take focus, and "Saved" is never announced. The only hook is `div.x9k2 > div:nth-child(2)`.
+The placeholder is the only name the box has. Nothing is called Send and it can't take focus, so the agent has to guess at `div.x9k2 > div:nth-child(2)`. "Saved" is never announced.
 
 </td>
-<td>
+<td valign="top">
 
-**Task passes.** The agent clicks the button named "Send message", and the status live region announces "Saved" on its own. A stable hook: `getByRole('button', { name: 'Send message' })`.
+The agent clicks `getByRole('button', { name: 'Send message' })`, and the status region announces "Saved" without anyone moving focus to it.
 
 </td>
 </tr>
+</tbody>
 </table>
 
-## Three tiers, same pixels
+## Three tiers
 
-Each tier is a semantics-only patch on an open-source app. Screenshots are checked byte-identical across tiers, so any difference in what the agent does comes from what it can *read*, not what it can *see*.
+Each tier is a patch on a real open-source app that changes markup and nothing else. Screenshots are compared byte for byte across tiers, so whatever the agent does differently, it does because of what it can read.
 
-| | Tier | Bar |
-|---|---|---|
-| 🍲 | **Div soup** | No names, no roles, no state. Clickable `<div>`s. |
-| ✅ | **WCAG / Section 508** | Zero axe violations tagged WCAG 2.x A/AA. Compliance. |
-| 🧭 | **100% accessibility patterns** | WAI-ARIA APG patterns plus agent hints: contextual names on repeated controls, descriptions, stable ids. |
+| Tier | Definition |
+|:---|:---|
+| Div soup | No accessible names, roles or state. Controls are clickable `<div>`s. |
+| WCAG / Section 508 | No axe violations tagged WCAG 2.x A or AA. This is the compliance bar most teams ship to. |
+| 100% accessibility patterns | WCAG, plus WAI-ARIA Authoring Practices for every widget a task touches, plus hints for agents: controls named for what they act on, descriptions, stable ids. |
 
-## Evals are the outcome
+## Results
 
-Each tier is scored two ways: by the evals teams already run, and by an agent doing real tasks.
+**what-iff**, Memory Manager. Four tasks, three runs of each task per tier per model, driven through Playwright MCP. Every run is graded by reading the app's state through its API; the agent's own claim of success isn't trusted. Costs are list prices.
 
-**Method:** what-iff's Memory Manager, 4 tasks × 3 runs per tier per model, through Playwright MCP. Every run is graded from app state, not the agent's word. Costs are list prices.
+### What existing evals see
 
-| | 🍲 Div soup | ✅ WCAG / 508 | 🧭 Patterns |
-|---|:---:|:---:|:---:|
-| **Evals you already run** | | | |
-| axe WCAG violations | 22 | 0 | 0 |
-| Role-based UI tests passing | 5/26 | 26/26 | 26/26 |
-| **Agent doing the tasks** · tokens per success<br><sub>$ per success · mean tool calls</sub> | | | |
-| Claude Opus 5.5 | 348k<br><sub>$0.29 · 20</sub> | 301k<br><sub>$0.26 · 19</sub> | **278k**<br><sub>$0.28 · 17</sub> |
-| Claude Sonnet 5.5 | 402k<br><sub>$0.19 · 19</sub> | 329k<br><sub>$0.16 · 17</sub> | **312k**<br><sub>$0.16 · 16</sub> |
-| Claude Haiku 4.5 | 2.14M<br><sub>$0.41 · 37</sub> | 1.10M<br><sub>$0.25 · 27</sub> | **922k**<br><sub>$0.22 · 24</sub> |
-| Claude Haiku 5.5 | 626k<br><sub>$0.015 · 24</sub> | **511k**<br><sub>$0.013 · 20</sub> | 626k<br><sub>$0.015 · 24</sub> |
-| Success rate, all four models | 90% | 98% | 100% |
-| "Done" but wasn't | 2 | 0 | 0 |
+| Signal | Div soup | WCAG / 508 | Patterns |
+|:---|---:|---:|---:|
+| axe violations tagged WCAG A/AA | 22 | 0 | 0 |
+| what-iff's own role-based UI tests passing | 5 / 26 | 26 / 26 | 26 / 26 |
+| Screenshots identical to WCAG | yes | — | yes |
 
-> [!IMPORTANT]
-> **Watch the axe row.** WCAG and Patterns both read zero, so axe can't tell them apart. Div soup costs every model more tokens than WCAG: 16% more for Opus, 22% for Sonnet and Haiku 5.5, and 95% for Haiku 4.5, which also takes screenshots and falsely claims success there. Patterns went further than compliance for Opus, Sonnet and Haiku 4.5 (5–16% fewer tokens than WCAG), but not for Haiku 5.5.
+### What agents see
 
-Per-run data, the T4 exclusion and the other limits are in [`results/published/what-iff`](results/published/what-iff/README.md).
+<table>
+<thead>
+<tr>
+<th rowspan="2" align="left">Model</th>
+<th colspan="3">Tokens per successful task</th>
+<th colspan="3">Cost per successful task</th>
+<th colspan="3">Tool calls per run</th>
+</tr>
+<tr>
+<th align="right">Div soup</th><th align="right">WCAG</th><th align="right">Patterns</th>
+<th align="right">Div soup</th><th align="right">WCAG</th><th align="right">Patterns</th>
+<th align="right">Div soup</th><th align="right">WCAG</th><th align="right">Patterns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Opus 5.5</td>
+<td align="right">348k</td><td align="right">301k</td><td align="right"><b>278k</b></td>
+<td align="right">$0.29</td><td align="right"><b>$0.26</b></td><td align="right">$0.28</td>
+<td align="right">20.2</td><td align="right">19.3</td><td align="right"><b>16.9</b></td>
+</tr>
+<tr>
+<td>Claude Sonnet 5.5</td>
+<td align="right">402k</td><td align="right">329k</td><td align="right"><b>312k</b></td>
+<td align="right">$0.19</td><td align="right"><b>$0.16</b></td><td align="right"><b>$0.16</b></td>
+<td align="right">19.1</td><td align="right">17.3</td><td align="right"><b>15.8</b></td>
+</tr>
+<tr>
+<td>Claude Haiku 4.5</td>
+<td align="right">2.14M</td><td align="right">1.10M</td><td align="right"><b>922k</b></td>
+<td align="right">$0.41</td><td align="right">$0.25</td><td align="right"><b>$0.22</b></td>
+<td align="right">37.3</td><td align="right">26.7</td><td align="right"><b>24.4</b></td>
+</tr>
+<tr>
+<td>Claude Haiku 5.5</td>
+<td align="right">626k</td><td align="right"><b>511k</b></td><td align="right">626k</td>
+<td align="right">$0.015</td><td align="right"><b>$0.013</b></td><td align="right">$0.015</td>
+<td align="right">24.3</td><td align="right"><b>20.3</b></td><td align="right">23.8</td>
+</tr>
+</tbody>
+</table>
 
-## The takeaway
+<sub>Lowest value in each group in bold.</sub>
 
-> **Accessibility is for people first. Agents benefit too.**
->
-> The names, roles and state that people who are blind or have low vision rely on, through screen readers and other assistive technology, are the same interface an agent reads. Build it right for people, and agents can use it too.
+| All four models | Div soup | WCAG / 508 | Patterns |
+|:---|---:|---:|---:|
+| Tasks completed | 90% | 98% | 100% |
+| Claimed done, but wasn't | 2 | 0 | 0 |
 
-## The apps
+### Reading the results
 
-| App | What it is | Status |
-|---|---|---|
-| [**what-iff**](https://github.com/theimaginaryfoundation/what-iff) | AI assistant · Angular, Go | ✅ All three tiers measured with agents. Tiers, seed, graders and runner live on the [`ax-tiers`](https://github.com/neupenguin/what-iff/tree/ax-tiers) fork branch. |
-| [**Headlamp**](https://github.com/kubernetes-sigs/headlamp) | Kubernetes UI · React, MUI | 🔧 Three tier patches, seed and kubectl graders for H1–H5, pixel gate and axe gate. No agent runs yet. |
-| [**Open MCT**](https://github.com/nasa/openmct) | NASA mission control · Vue | 🔧 Pin, build and serve, CouchDB seed and graders for O1–O5, div-soup patch started. |
+Div soup made every model work harder for the same outcome. Against WCAG it cost Opus 16% more tokens per success, Sonnet and Haiku 5.5 22% more, and Haiku 4.5 95% more. Haiku 4.5 also fell back on screenshots there and twice reported success on tasks it hadn't finished.
+
+axe scores WCAG and patterns identically, at zero. The agents could tell them apart: patterns cut tokens by a further 5–16% for Opus, Sonnet and Haiku 4.5. Haiku 5.5 is the exception. On these tasks it did no better with patterns than with WCAG.
+
+Per-run data and the study's limits, including why one task was excluded, are in [`results/published/what-iff`](results/published/what-iff/README.md).
+
+## Takeaway
+
+**Accessibility is for people first. Agents benefit too.** The names, roles and state that blind and low-vision people rely on through screen readers are the same interface a browser agent reads. Build it properly for people and agents can use it as well.
+
+## Apps
+
+| App | Stack | Status |
+|:---|:---|:---|
+| [what-iff](https://github.com/theimaginaryfoundation/what-iff) | AI assistant · Angular, Go | Measured across all three tiers with four models. Tiers, seed, graders and runner are on the [`ax-tiers`](https://github.com/neupenguin/what-iff/tree/ax-tiers) branch of a fork. |
+| [Headlamp](https://github.com/kubernetes-sigs/headlamp) | Kubernetes UI · React, MUI | All three tier patches, kubectl graders for five tasks, pixel and axe gates. Agent runs in progress. |
+| [Open MCT](https://github.com/nasa/openmct) | Mission control · Vue | Build and serve, CouchDB graders for five tasks. Tier patches in progress. |
 
 ## Run every app in every tier
 
@@ -165,7 +212,7 @@ alias ax='node dist/harness/src/cli.js'
 | Open MCT | `ax serve --app openmct --tier div-soup` → http://localhost:8090 | `--tier wcag` → http://localhost:8091 | `--tier patterns` → http://localhost:8092 |
 | what-iff | http://localhost:4200/memories?ax=3 | http://localhost:4200/memories?ax=0 | http://localhost:4200/memories?ax=4 |
 
-Open MCT's wcag and patterns tiers have no patch yet, so they serve the app as
+Until their patches land, Open MCT's WCAG and patterns tiers serve the app as
 shipped.
 
 ### Headlamp
