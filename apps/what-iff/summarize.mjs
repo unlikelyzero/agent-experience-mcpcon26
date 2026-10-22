@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Per-model x tier tables from results/published/what-iff/runs.csv (Markdown on stdout).
-//   node apps/what-iff/summarize.mjs [runs.csv]
+//   node apps/what-iff/summarize.mjs [runs.csv | interfaces.csv]
 // T4 is reported separately: it fails at every tier because one target memory is scoped to a thread
 // and never appears in the Archived view, so it measures discoverability, not accessibility.
 import { readFileSync } from 'node:fs';
@@ -17,7 +17,9 @@ const runs = lines.map(line => {
   return row;
 });
 
-const MODELS = [...new Set(runs.map(r => r.model))];
+// Rows group by model, and by interface too when the CSV has one (interfaces.csv).
+const groupOf = r => (r.interface ? `${r.model} · ${r.interface}` : r.model);
+const MODELS = [...new Set(runs.map(groupOf))];
 const TIERS = ['div-soup', 'wcag', 'patterns'];
 const tokens = r => +r.input_tokens + +r.output_tokens + +r.cache_read_tokens + +r.cache_creation_tokens;
 const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -27,7 +29,7 @@ console.log('| Model | Tier | Pass | Mean tool calls | Mean screenshots | Tokens
 console.log('|---|---|---|---|---|---|---|---|');
 for (const model of MODELS)
   for (const tier of TIERS) {
-    const rs = runs.filter(r => r.model === model && r.tier === tier && r.task !== 'T4');
+    const rs = runs.filter(r => groupOf(r) === model && r.tier === tier && r.task !== 'T4');
     if (!rs.length) continue;
     const pass = rs.filter(r => r.pass === 'true').length;
     const spent = rs.reduce((s, r) => s + +r.cost_usd, 0);

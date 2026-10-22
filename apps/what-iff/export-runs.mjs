@@ -2,6 +2,7 @@
 // Merge the ax-tiers runner's CSVs into results/published/what-iff/runs.csv.
 //   node apps/what-iff/export-runs.mjs <model>=<runner results.csv> ... > results/published/what-iff/runs.csv
 //   e.g. claude-opus-5-5=tiers-a.csv claude-haiku-5-5=haiku-5-5.csv
+// --driver adds the runner's driver column (playwright-mcp, webmcp, webmcp-soup) as `interface`.
 // Adds model and tier columns and drops the local transcript path. Rows for models the `claude`
 // CLI can't price (see RATES) are repriced from the transcript before the path is dropped.
 import { readFileSync } from 'node:fs';
@@ -39,8 +40,10 @@ export function reprice(transcriptPath, rateCard) {
   return cost;
 }
 
+const withDriver = process.argv.includes('--driver');
+if (withDriver) COLUMNS.splice(1, 0, 'interface');
 const rows = [];
-for (const arg of process.argv.slice(2)) {
+for (const arg of process.argv.slice(2).filter(a => a !== '--driver')) {
   const [model, path] = arg.split('=');
   const [header, ...lines] = readFileSync(path, 'utf8').trim().split('\n');
   const cols = header.split(',');
@@ -51,7 +54,7 @@ for (const arg of process.argv.slice(2)) {
     const row = Object.fromEntries(cols.slice(0, lead.length).map((c, i) => [c, lead[i]]));
     const failReasons = m[2].replace(/^"|"$/g, '').replace(/""/g, '"');
     if (RATES[model]) row.cost_usd = reprice(m[3], RATES[model]).toFixed(6);
-    rows.push({ ...row, model, tier: TIER[row.level], ax_level: row.level, fail_reasons: failReasons.replace(/,/g, ';') });
+    rows.push({ ...row, model, interface: row.driver, tier: TIER[row.level], ax_level: row.level, fail_reasons: failReasons.replace(/,/g, ';') });
   }
 }
 process.stdout.write([COLUMNS.join(','), ...rows.map(r => COLUMNS.map(c => r[c] ?? '').join(','))].join('\n') + '\n');
