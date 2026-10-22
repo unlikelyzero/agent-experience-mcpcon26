@@ -1,0 +1,16 @@
+same  div-soup vs wcag  deployments
+same  div-soup vs wcag  deployment
+same  div-soup vs wcag  scale-dialog
+same  div-soup vs wcag  pods
+same  div-soup vs wcag  pod
+same  div-soup vs wcag  cronjob
+same  div-soup vs wcag  configmaps
+same  div-soup vs wcag  delete-dialog
+same  div-soup vs patterns  deployments
+same  div-soup vs patterns  deployment
+same  div-soup vs patterns  scale-dialog
+same  div-soup vs patterns  pods
+same  div-soup vs patterns  pod
+same  div-soup vs patterns  cronjob
+same  div-soup vs patterns  configmaps
+same  div-soup vs patterns  delete-dialog
