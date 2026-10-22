@@ -5,7 +5,7 @@
  * session (rate limits, model load) spreads across tiers. See docs/DESIGN.md §5–6.
  */
 import { spawn } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setupDriver, type DriverName } from './drivers.js';
@@ -78,6 +78,10 @@ export async function runMatrix(app: AppAdapter, opts: RunOptions): Promise<void
   const csv = join(outDir, 'runs.csv');
   mkdirSync(outDir, { recursive: true });
   if (!existsSync(csv)) writeFileSync(csv, RUN_COLUMNS.join(',') + '\n');
+  // Cells already in the CSV are skipped, so a matrix stopped by a network error resumes
+  // where it left off when run again with the same options.
+  const cell = (model: string, tier: string, task: string, run: number | string) => [model, tier, task, run].join(',');
+  const done = new Set(readFileSync(csv, 'utf8').split('\n').slice(1).filter(Boolean).map(l => l.split(',').slice(0, 4).join(',')));
 
   const served = new Map<Tier, Served>();
   try {
@@ -89,6 +93,7 @@ export async function runMatrix(app: AppAdapter, opts: RunOptions): Promise<void
         for (const model of opts.models)
           for (const tier of opts.tiers) {
             const label = `[${++n}/${total}] ${model} ${tier} ${task.id} run ${run}`;
+            if (done.has(cell(model, tier, task.id, run))) continue;
             process.stderr.write(`${label} ...\n`);
             const row = await runOne(app, task, tier, model, run, served.get(tier)?.url ?? 'http://localhost', opts, outDir);
             if (!row) continue;
@@ -127,6 +132,8 @@ async function runOne(app: AppAdapter, task: Task, tier: Tier, model: string, ru
   const m = parseStreamJson(result.transcript);
   // An error before the agent did anything (expired login, network) is not a task failure.
   if (m.isError && m.toolCalls === 0 && m.outputTokens === 0) throw new Error(`claude failed before acting (${runDir}): ${m.finalText}`);
+  // Same for one that dropped mid-run: it measured the network, not the app. Rerun the cell.
+  if (m.isError && m.finalText.startsWith('API Error')) throw new Error(`claude lost the API mid-run (${runDir}): ${m.finalText}`);
   const grade = await task.grade(seed, m.finalText);
   const claimed = claimedDone(m.finalText);
   writeFileSync(join(runDir, 'grade.json'), JSON.stringify({ ...grade, claimed, metrics: m }, null, 2));
