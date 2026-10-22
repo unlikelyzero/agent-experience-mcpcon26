@@ -1,6 +1,7 @@
 # Poster
 
-Source of the printed AGNTCon + MCPCon 2026 poster (v45), 36×24 in landscape.
+Source of the AGNTCon + MCPCon 2026 poster (v46), 36×24 in landscape. The printed v45 is
+commit `31d2af0`; v46 changes only the Haiku 4.5 numbers to the finished runs.
 
 | Path | What |
 |---|---|
@@ -20,5 +21,5 @@ python3 scripts/render.py qr         # must decode to the evals repo URL
 ```
 
 `dist/` and `build/` are gitignored. The results table quotes
-[`results/published/what-iff`](../results/published/what-iff/README.md) as it stood at print time,
-before the Haiku 4.5 runs finished and the Haiku 5.5 runs were added.
+[`results/published/what-iff`](../results/published/what-iff/README.md) with the finished
+Haiku 4.5 runs (4 tasks × 3 runs per cell), before the Haiku 5.5 runs were added.
