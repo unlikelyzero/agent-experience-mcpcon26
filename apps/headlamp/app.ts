@@ -84,9 +84,9 @@ function expectState(seed: HeadlampSeed, change: (s: State) => void, ignore: str
   return { pass: reasons.length === 0, reasons };
 }
 
-/** `tag` as a whole token: 1.36.1 matches "1.36.1." but not "1.36.10". */
-const mentions = (text: string, tag: string) =>
-  new RegExp(`(?<![\\w.])${tag.replaceAll('.', '\\.')}(?![\\w]|\\.\\d)`).test(text);
+/** Where `tag` first appears as a whole token (1.36.1 matches "1.36.1." but not "1.36.10"), or -1. */
+const firstMention = (text: string, tag: string) =>
+  text.search(new RegExp(`(?<![\\w.])${tag.replaceAll('.', '\\.')}(?![\\w]|\\.\\d)`));
 
 const tasks: Task<HeadlampSeed>[] = [
   {
@@ -121,8 +121,11 @@ const tasks: Task<HeadlampSeed>[] = [
       const grade = expectState(seed, () => {});
       const prod = TAGS[PROD].PAYMENTS_TAG;
       const staging = TAGS[STAGING].PAYMENTS_TAG;
-      if (!mentions(finalText, prod)) grade.reasons.push(`final text does not name the prod tag ${prod}`);
-      if (mentions(finalText, staging)) grade.reasons.push(`final text names the staging tag ${staging}`);
+      // The answer is the first tag named. Naming staging's afterwards, to contrast it, is fine.
+      const p = firstMention(finalText, prod);
+      const st = firstMention(finalText, staging);
+      if (p < 0) grade.reasons.push(`final text does not name the prod tag ${prod}`);
+      else if (st >= 0 && st < p) grade.reasons.push(`final text names the staging tag ${staging} before the prod tag`);
       return { pass: grade.reasons.length === 0, reasons: grade.reasons };
     },
   },
