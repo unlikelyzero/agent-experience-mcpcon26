@@ -1,0 +1,410 @@
+diff --git a/app.js b/app.js
+index 0f41407..a8241e9 100644
+--- a/app.js
++++ b/app.js
+@@ -82,17 +82,15 @@
+     const monthBar = document.createElement("div");
+     monthBar.className = "w-month";
+     monthBar.innerHTML = `
+-      <button type="button" aria-label="Previous month" data-nav="prev">‹</button>
++      <div class="ax-btn" data-nav="prev">‹</div>
+       <span class="w-month-label"></span>
+-      <button type="button" aria-label="Next month" data-nav="next">›</button>
++      <div class="ax-btn" data-nav="next">›</div>
+     `;
+     root.appendChild(monthBar);
+ 
+     // Calendar grid
+     const cal = document.createElement("div");
+     cal.className = "w-cal";
+-    cal.setAttribute("role", "grid");
+-    cal.setAttribute("aria-label", "Available booking dates");
+     root.appendChild(cal);
+ 
+     // Slots container
+@@ -111,10 +109,10 @@
+     form.className = "w-form";
+     form.setAttribute("novalidate", "");
+     form.innerHTML = `
+-      <label>Name<input type="text" name="name" autocomplete="name" /></label>
+-      <label>Email<input type="email" name="email" autocomplete="email" /></label>
+-      <button type="submit" class="w-confirm" disabled>Confirm booking</button>
+-      <div class="w-success" role="status"></div>
++      <div class="ax-label">Name<input type="text" name="name" autocomplete="name" /></div>
++      <div class="ax-label">Email<input type="email" name="email" autocomplete="email" /></div>
++      <div class="w-confirm ax-btn" disabled>Confirm booking</div>
++      <div class="w-success"></div>
+     `;
+     root.appendChild(form);
+ 
+@@ -135,7 +133,6 @@
+         const el = document.createElement("div");
+         el.className = "w-dow";
+         el.textContent = d;
+-        el.setAttribute("aria-hidden", "true");
+         cal.appendChild(el);
+       });
+ 
+@@ -146,13 +143,10 @@
+       // Leading days from previous month
+       for (let i = 0; i < firstDow; i++) {
+         const dn = prevDays - firstDow + 1 + i;
+-        const cell = document.createElement("button");
+-        cell.type = "button";
+-        cell.className = "w-day is-other";
++        const cell = document.createElement("div");
++        cell.className = "w-day is-other ax-btn";
+         cell.textContent = dn;
+-        cell.disabled = true;
+-        cell.tabIndex = -1;
+-        cell.setAttribute("aria-hidden", "true");
++        cell.setAttribute("disabled", "");
+         cal.appendChild(cell);
+       }
+ 
+@@ -160,21 +154,19 @@
+       for (let d = 1; d <= daysInMonth; d++) {
+         const date = new Date(y, m, d);
+         const iso = fmtISO(date);
+-        const cell = document.createElement("button");
+-        cell.type = "button";
+-        cell.className = "w-day";
++        const cell = document.createElement("div");
++        cell.className = "w-day ax-btn";
+         cell.textContent = d;
+         cell.dataset.date = iso;
+-        cell.setAttribute("aria-label", fmtLongDate(date));
+ 
+         const has = !!AVAILABILITY[iso];
+         const inPast = date < TODAY;
+         if (has && !inPast) cell.classList.add("has-slots");
+-        else cell.disabled = true;
++        else cell.setAttribute("disabled", "");
+ 
+         if (state.selectedDate === iso) cell.classList.add("is-selected");
+ 
+-        cell.addEventListener("click", () => selectDate(iso));
++        if (!cell.hasAttribute("disabled")) cell.addEventListener("click", () => selectDate(iso));
+         cal.appendChild(cell);
+       }
+     }
+@@ -190,15 +182,14 @@
+       const list = AVAILABILITY[state.selectedDate] || [];
+       // render all 6 slots; disable unavailable
+       ALL_SLOTS.forEach((t) => {
+-        const btn = document.createElement("button");
+-        btn.type = "button";
+-        btn.className = "w-slot";
++        const btn = document.createElement("div");
++        btn.className = "w-slot ax-btn";
+         btn.dataset.time = t;
+         btn.textContent = fmtTime(t);
+         const available = list.includes(t);
+-        if (!available) btn.disabled = true;
++        if (!available) btn.setAttribute("disabled", "");
+         if (state.selectedSlot === t) btn.classList.add("is-selected");
+-        btn.addEventListener("click", () => selectSlot(t));
++        if (available) btn.addEventListener("click", () => selectSlot(t));
+         slots.appendChild(btn);
+       });
+     }
+@@ -225,7 +216,7 @@
+ 
+     function updateSubmit() {
+       const ok = state.selectedDate && state.selectedSlot && state.name.trim() && state.email.trim();
+-      submitBtn.disabled = !ok;
++      submitBtn.toggleAttribute("disabled", !ok);
+     }
+ 
+     nameInput.addEventListener("input", (e) => {
+@@ -243,9 +234,10 @@
+       e.preventDefault();
+       doConfirm();
+     });
++    submitBtn.addEventListener("click", doConfirm);
+ 
+     function doConfirm() {
+-      if (submitBtn.disabled) return;
++      if (submitBtn.hasAttribute("disabled")) return;
+       const id = "BK-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+       state.confirmed = { id, date: state.selectedDate, time: state.selectedSlot };
+       successEl.classList.add("is-visible");
+@@ -284,7 +276,7 @@
+       },
+     };
+ 
+-    monthBar.querySelectorAll("button").forEach((b) => {
++    monthBar.querySelectorAll("[data-nav]").forEach((b) => {
+       b.addEventListener("click", () => {
+         const dir = b.dataset.nav === "next" ? 1 : -1;
+         const v = state.viewMonth;
+@@ -450,7 +442,7 @@
+     toolsListEl.innerHTML = "";
+     toolsCountEl.textContent = localRegistry.length;
+     localRegistry.forEach((t) => {
+-      const li = document.createElement("li");
++      const li = document.createElement("div");
+       li.className = "tool-item";
+       li.dataset.tool = t.name;
+       const reqs = new Set(t.inputSchema?.required || []);
+diff --git a/index.html b/index.html
+index 3fae92b..3c0b713 100644
+--- a/index.html
++++ b/index.html
+@@ -14,22 +14,22 @@
+   <div class="bg-grad" aria-hidden="true"></div>
+   <div class="bg-noise" aria-hidden="true"></div>
+ 
+-  <header class="nav">
++  <div class="nav">
+     <a class="brand" href="#top">
+       <span class="brand-mark" aria-hidden="true">
+         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 12 L9 6 L9 10 L21 10 L21 14 L9 14 L9 18 Z" fill="currentColor"/></svg>
+       </span>
+       <span>WebMCP</span>
+     </a>
+-    <nav class="nav-links">
++    <div class="nav-links">
+       <a href="#compare">Demo</a>
+       <a href="#how">How it works</a>
+       <a href="#start">Get started</a>
+       <a href="#spec" class="nav-cta">Spec ↗</a>
+-    </nav>
+-  </header>
++    </div>
++  </div>
+ 
+-  <main id="top">
++  <div id="top" class="ax-main">
+     <!-- HERO -->
+     <section class="hero">
+       <p class="eyebrow"><span class="dot"></span> A web platform proposal</p>
+@@ -54,7 +54,7 @@
+ 
+     <!-- COMPARE -->
+     <section class="compare" id="compare">
+-      <header class="section-head">
++      <div class="section-head">
+         <p class="eyebrow"><span class="dot"></span> Side by side</p>
+         <h2>The same booking widget, two ways to be controlled.</h2>
+         <p class="section-sub">
+@@ -62,22 +62,22 @@
+           Left: scrape the DOM. Right: call a tool.
+         </p>
+         <div class="run-bar">
+-          <button class="btn btn-run" id="run-sim">
+-            <span class="run-icon" aria-hidden="true">▶</span>
++          <div class="btn btn-run ax-btn" id="run-sim">
++            <span class="run-icon">▶</span>
+             <span class="run-label">Run agent: “Book me Tuesday at 2pm”</span>
+-          </button>
+-          <button class="btn btn-ghost btn-reset" id="reset-sim" aria-label="Reset demo">Reset</button>
++          </div>
++          <div class="btn btn-ghost btn-reset ax-btn" id="reset-sim">Reset</div>
+         </div>
+-      </header>
++      </div>
+ 
+       <div class="split">
+         <!-- WITHOUT -->
+-        <article class="panel panel--without" data-mode="without">
+-          <header class="panel-head">
++        <div class="panel panel--without" data-mode="without">
++          <div class="panel-head">
+             <span class="panel-tag panel-tag--warn">Without WebMCP</span>
+             <h3>Agent must scrape</h3>
+             <p>It guesses meaning from <code>aria-*</code>, classnames, and shape.</p>
+-          </header>
++          </div>
+ 
+           <div class="stage">
+             <div class="widget" id="widget-without">
+@@ -87,13 +87,13 @@
+             <div class="scan-cursor" id="scan-cursor" aria-hidden="true"></div>
+           </div>
+ 
+-          <footer class="panel-foot">
+-            <div class="agent-log" id="log-without" aria-live="polite">
++          <div class="panel-foot">
++            <div class="agent-log" id="log-without">
+               <div class="log-head">Agent observation log</div>
+               <ol class="log-list"></ol>
+             </div>
+-          </footer>
+-        </article>
++          </div>
++        </div>
+ 
+         <!-- DIVIDER -->
+         <div class="seam" aria-hidden="true">
+@@ -101,12 +101,12 @@
+         </div>
+ 
+         <!-- WITH -->
+-        <article class="panel panel--with" data-mode="with">
+-          <header class="panel-head">
++        <div class="panel panel--with" data-mode="with">
++          <div class="panel-head">
+             <span class="panel-tag panel-tag--ok">With WebMCP</span>
+             <h3>Agent calls tools</h3>
+             <p>The page declares typed capabilities. The agent just calls them.</p>
+-          </header>
++          </div>
+ 
+           <div class="stage">
+             <div class="widget" id="widget-with">
+@@ -114,23 +114,23 @@
+             </div>
+           </div>
+ 
+-          <footer class="panel-foot">
++          <div class="panel-foot">
+             <div class="tools-panel" id="tools-panel">
+               <div class="tools-head">
+                 <span class="tools-title">Registered tools</span>
+                 <span class="tools-count" id="tools-count">0</span>
+               </div>
+-              <ul class="tools-list" id="tools-list"></ul>
++              <div class="tools-list" id="tools-list"></div>
+               <div class="tool-call" id="tool-call" hidden>
+                 <div class="tool-call-head">Last call</div>
+                 <pre class="tool-call-body"><code id="tool-call-code"></code></pre>
+               </div>
+             </div>
+-          </footer>
+-        </article>
++          </div>
++        </div>
+       </div>
+       <div class="webmcp-status" id="webmcp-status">
+-        <p id="insert-status" role="status" aria-live="polite"></p>
++        <p id="insert-status"></p>
+         <div class="extension-info">
+           <p>With the extension, you can:</p>
+           <ul>
+@@ -146,10 +146,10 @@
+ 
+     <!-- HOW IT WORKS -->
+     <section class="how" id="how">
+-      <header class="section-head">
++      <div class="section-head">
+         <p class="eyebrow"><span class="dot"></span> The idea, in three steps</p>
+         <h2>How WebMCP works</h2>
+-      </header>
++      </div>
+ 
+       <div class="steps">
+         <div class="step">
+@@ -221,11 +221,11 @@
+ 
+     <!-- GET STARTED -->
+     <section class="start" id="start">
+-      <header class="section-head">
++      <div class="section-head">
+         <p class="eyebrow"><span class="dot"></span> Try it yourself</p>
+         <h2>Get started</h2>
+         <p class="section-sub">There are two APIs you can use to set up your website tools.</p>
+-      </header>
++      </div>
+ 
+       <div class="start-grid">
+         <div class="start-card">
+@@ -350,12 +350,12 @@
+         </p>
+       </div>
+     </section>
+-  </main>
++  </div>
+ 
+-  <footer class="foot">
++  <div class="foot">
+     <p>Demo by a human (<a href="https://x.com/sarah_edo" target="_blank" rel="noopener">Sarah Drasner</a>). For humans (and the agents acting on their behalf).</p>
+     <p>Built with vanilla HTML, CSS, and JS. <a href="https://github.com/sdras/webmcp-demo" target="_blank" rel="noopener">View source ↗</a></p>
+-  </footer>
++  </div>
+ 
+   <script src="app.js" defer></script>
+ </body>
+diff --git a/styles.css b/styles.css
+index 9cd0bf5..e3cc4b1 100644
+--- a/styles.css
++++ b/styles.css
+@@ -55,6 +55,15 @@ a { color: inherit; text-decoration: none; }
+ em { font-family: var(--font-serif); font-style: italic; font-weight: 400; }
+ 
+ button { font-family: inherit; }
++/* div soup: a <div class="ax-btn"> boxes like the <button> it replaced (Chrome's button
++   defaults, at zero specificity so every class rule still wins). */
++:where(.ax-btn) {
++  display: inline-block; box-sizing: border-box; margin: 0; padding: 1px 6px;
++  border: 2px outset buttonborder; background-color: buttonface; color: buttontext;
++  font: 400 13.3333px/normal system-ui; font-family: inherit; letter-spacing: normal; word-spacing: normal;
++  text-transform: none; text-indent: 0; text-shadow: none; text-align: center; cursor: default;
++}
++.w-month .ax-btn { display: flex; align-items: center; justify-content: center; }
+ 
+ code, pre { font-family: var(--font-mono); }
+ ::selection { background: var(--ok); color: #0a0a18; }
+@@ -152,7 +161,7 @@ code, pre { font-family: var(--font-mono); }
+    SHARED — sections, eyebrows, headings, buttons
+    ============================================================ */
+ 
+-main {
++main, .ax-main {
+   padding: 0 clamp(20px, 4vw, 56px);
+   max-width: 1400px;
+   margin: 0 auto;
+@@ -625,7 +634,7 @@ h2 {
+   font-size: 12px;
+   color: #2b1a55;
+ }
+-.w-month button {
++.w-month button, .w-month .ax-btn {
+   width: 22px;
+   height: 22px;
+   border-radius: 5px;
+@@ -664,13 +673,13 @@ h2 {
+   display: grid;
+   place-items: center;
+ }
+-.w-day:hover:not(:disabled) { 
++.w-day:hover:not(:disabled):not([disabled]) { 
+   background: #f3f0fc; 
+   border-color: #cbc4e8; 
+   transform: translateY(-1px); 
+   color: #5219a1;
+ }
+-.w-day:disabled { color: #c4c0d6; cursor: not-allowed; background: #faf9fd; }
++.w-day:disabled, .w-day[disabled] { color: #c4c0d6; cursor: not-allowed; background: #faf9fd; }
+ .w-day.has-slots::after {
+   content: "";
+   position: absolute;
+@@ -706,8 +715,8 @@ h2 {
+   cursor: pointer;
+   transition: background 0.15s, border-color 0.15s;
+ }
+-.w-slot:hover:not(:disabled) { background: #f3f0fc; border-color: #cbc4e8; }
+-.w-slot:disabled { color: #c4c0d6; cursor: not-allowed; background: #faf9fd; }
++.w-slot:hover:not(:disabled):not([disabled]) { background: #f3f0fc; border-color: #cbc4e8; }
++.w-slot:disabled, .w-slot[disabled] { color: #c4c0d6; cursor: not-allowed; background: #faf9fd; }
+ .w-slot.is-selected {
+   background: linear-gradient(135deg, var(--ok), var(--ok-2));
+   color: #0a0a18;
+@@ -719,7 +728,7 @@ h2 {
+   grid-template-columns: 1fr 1fr;
+   gap: 6px;
+ }
+-.w-form label {
++.w-form label, .w-form .ax-label {
+   display: flex;
+   flex-direction: column;
+   font-size: 9px;
+@@ -757,7 +766,7 @@ h2 {
+   transition: background 0.2s;
+ }
+ .w-confirm:hover { background: #2b1a55; }
+-.w-confirm:disabled { background: #c4c0d6; cursor: not-allowed; }
++.w-confirm:disabled, .w-confirm[disabled] { background: #c4c0d6; cursor: not-allowed; }
+ 
+ .w-success {
+   padding: 8px 12px;
