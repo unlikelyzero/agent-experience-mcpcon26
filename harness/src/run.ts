@@ -5,7 +5,7 @@
  * session (rate limits, model load) spreads across tiers. See docs/DESIGN.md §5–6.
  */
 import { spawn } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setupDriver, type DriverName } from './drivers.js';
@@ -78,11 +78,6 @@ export async function runMatrix(app: AppAdapter, opts: RunOptions): Promise<void
   const csv = join(outDir, 'runs.csv');
   mkdirSync(outDir, { recursive: true });
   if (!existsSync(csv)) writeFileSync(csv, RUN_COLUMNS.join(',') + '\n');
-  // Resume: a cell already in the CSV (a stopped matrix, a network outage) is not run again.
-  const done = new Set(readFileSync(csv, 'utf8').trim().split('\n').slice(1).map(line => {
-    const [model, tier, task, run] = line.split(',');
-    return `${model},${tier},${task},${run}`;
-  }));
 
   const served = new Map<Tier, Served>();
   try {
@@ -94,7 +89,6 @@ export async function runMatrix(app: AppAdapter, opts: RunOptions): Promise<void
         for (const model of opts.models)
           for (const tier of opts.tiers) {
             const label = `[${++n}/${total}] ${model} ${tier} ${task.id} run ${run}`;
-            if (done.has(`${model},${tier},${task.id},${run}`)) continue;
             process.stderr.write(`${label} ...\n`);
             const row = await runOne(app, task, tier, model, run, served.get(tier)?.url ?? 'http://localhost', opts, outDir);
             if (!row) continue;
