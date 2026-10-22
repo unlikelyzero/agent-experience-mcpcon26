@@ -250,7 +250,8 @@ another.
 5. Headlamp tier patches, each passing the pixel gate: `div-soup` (done for
    the task paths), `wcag` (done, axe-clean), `patterns` (done for the task
    paths: APG dialog patterns plus hints). All three pixel-identical.
-6. `ax eval roles`, then `ax run` and `ax report`.
+6. `ax run` and `ax report` (done): 180 agent runs each on Headlamp and Open MCT, published under
+   `results/published/`. `ax eval roles` is not built.
 7. what-iff: tiers, seed, graders and agent runs done on the fork's `ax-tiers`
    branch, and results published. Still to do: port the seed and graders into
    `apps/what-iff`, and recut levels 3 and 4 as `tiers/div-soup.patch` and

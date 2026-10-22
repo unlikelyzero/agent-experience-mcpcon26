@@ -115,17 +115,54 @@ Each tier is a patch on a real open-source app that changes markup and nothing e
 
 ## Results
 
-**what-iff**, Memory Manager. Four tasks, three runs of each task per tier per model, driven through Playwright MCP. Every run is graded by reading the app's state through its API; the agent's own claim of success isn't trusted. Costs are list prices.
+Three apps, four models, three runs of every task at every tier: 504 graded runs. Every run is graded by reading the app's own state (its API, the Kubernetes cluster, or its database). The agent's claim of success isn't trusted. Costs are list prices.
 
-### What existing evals see
+### Div soup costs every model more
 
-| Signal | Div soup | WCAG / 508 | Patterns |
+Extra tokens per successful task on div soup, compared with the WCAG tier:
+
+| Model | what-iff | Headlamp | Open MCT |
 |:---|---:|---:|---:|
-| axe violations tagged WCAG A/AA | 22 | 0 | 0 |
-| what-iff's own role-based UI tests passing | 5 / 26 | 26 / 26 | 26 / 26 |
-| Screenshots identical to WCAG | yes | — | yes |
+| Claude Opus 5.5 | +16% | +44% | +23% |
+| Claude Sonnet 5.5 | +22% | +54% | +19% |
+| Claude Haiku 4.5 | +95% | +102% | +147% |
+| Claude Haiku 5.5 | +22% | +16% | +9% |
 
-### What agents see
+### Existing evals barely notice
+
+| WCAG-tagged axe violations | Div soup | WCAG / 508 | Patterns |
+|:---|---:|---:|---:|
+| what-iff | 22 | 0 | 0 |
+| Headlamp | 2 | 0 | 0 |
+| Open MCT | 49 | 0 | 0 |
+
+A `<div>` with a click handler gives axe nothing to flag. On Headlamp, axe finds two WCAG violations in div soup while every model spends 16–102% more to get the same work done.
+
+### Going past compliance is mixed
+
+Tokens per successful task on the patterns tier, compared with WCAG:
+
+| Model | what-iff | Headlamp | Open MCT |
+|:---|---:|---:|---:|
+| Claude Opus 5.5 | −7% | −4% | 0% |
+| Claude Sonnet 5.5 | −5% | +2% | +17% |
+| Claude Haiku 4.5 | −16% | +51% | +44% |
+| Claude Haiku 5.5 | +22% | +44% | −14% |
+
+The APG patterns and agent hints built here helped on what-iff and were neutral to costly elsewhere, most of all for the two Haiku models, which also took more screenshots on that tier. Compliance captured most of the benefit.
+
+### Completion
+
+| Tasks completed, all four models | Div soup | WCAG / 508 | Patterns | Claimed done, but wasn't |
+|:---|---:|---:|---:|:---|
+| what-iff | 90% | 98% | 100% | 2, all div soup |
+| Headlamp | 97% | 100% | 100% | 2, all div soup |
+| Open MCT | 93% | 90% | 95% | 3, all WCAG |
+
+Open MCT's WCAG dip is one task. Reordering frames in a Flexible Layout is a drag, and only the patterns tier adds a keyboard alternative. WCAG 2.5.7 requires a single-pointer alternative to dragging, but axe can't test for it, so an axe-clean tier still shipped without one. Haiku 4.5 failed it three times there and claimed success each time.
+
+<details>
+<summary>what-iff in detail: tokens, cost and tool calls per model and tier</summary>
 
 <table>
 <thead>
@@ -171,18 +208,9 @@ Each tier is a patch on a real open-source app that changes markup and nothing e
 
 <sub>Lowest value in each group in bold.</sub>
 
-| All four models | Div soup | WCAG / 508 | Patterns |
-|:---|---:|---:|---:|
-| Tasks completed | 90% | 98% | 100% |
-| Claimed done, but wasn't | 2 | 0 | 0 |
+</details>
 
-### Reading the results
-
-Div soup made every model work harder for the same outcome. Against WCAG it cost Opus 16% more tokens per success, Sonnet and Haiku 5.5 22% more, and Haiku 4.5 95% more. Haiku 4.5 also fell back on screenshots there and twice reported success on tasks it hadn't finished.
-
-axe scores WCAG and patterns identically, at zero. The agents could tell them apart: patterns cut tokens by a further 5–16% for Opus, Sonnet and Haiku 4.5. Haiku 5.5 is the exception. On these tasks it did no better with patterns than with WCAG.
-
-Per-run data and the study's limits, including why one task was excluded, are in [`results/published/what-iff`](results/published/what-iff/README.md).
+Per-run data, methods and limits for each app: [what-iff](results/published/what-iff/README.md) · [Headlamp](results/published/headlamp/README.md) · [Open MCT](results/published/openmct/README.md).
 
 ## Takeaway
 
@@ -192,9 +220,9 @@ Per-run data and the study's limits, including why one task was excluded, are in
 
 | App | Stack | Status |
 |:---|:---|:---|
-| [what-iff](https://github.com/theimaginaryfoundation/what-iff) | AI assistant · Angular, Go | Measured across all three tiers with four models. Tiers, seed, graders and runner are on the [`ax-tiers`](https://github.com/neupenguin/what-iff/tree/ax-tiers) branch of a fork. |
-| [Headlamp](https://github.com/kubernetes-sigs/headlamp) | Kubernetes UI · React, MUI | All three tier patches, kubectl graders for five tasks, pixel and axe gates. Agent runs in progress. |
-| [Open MCT](https://github.com/nasa/openmct) | Mission control · Vue | Build and serve, CouchDB graders for five tasks. Tier patches in progress. |
+| [what-iff](https://github.com/theimaginaryfoundation/what-iff) | AI assistant · Angular, Go | Measured: 4 tasks, 144 runs. Tiers, seed, graders and runner are on the [`ax-tiers`](https://github.com/neupenguin/what-iff/tree/ax-tiers) branch of a fork. |
+| [Headlamp](https://github.com/kubernetes-sigs/headlamp) | Kubernetes UI · React, MUI | Measured: 5 tasks graded with kubectl, 180 runs. Tier patches pass the pixel and axe gates. |
+| [Open MCT](https://github.com/nasa/openmct) | Mission control · Vue | Measured: 5 tasks graded from CouchDB, 180 runs. Tier patches pass the pixel and axe gates. |
 
 ## Run every app in every tier
 
@@ -211,9 +239,6 @@ alias ax='node dist/harness/src/cli.js'
 | Headlamp | `ax serve --app headlamp --tier div-soup` → http://localhost:4466 | `--tier wcag` → http://localhost:4467 | `--tier patterns` → http://localhost:4468 |
 | Open MCT | `ax serve --app openmct --tier div-soup` → http://localhost:8090 | `--tier wcag` → http://localhost:8091 | `--tier patterns` → http://localhost:8092 |
 | what-iff | http://localhost:4200/memories?ax=3 | http://localhost:4200/memories?ax=0 | http://localhost:4200/memories?ax=4 |
-
-Until their patches land, Open MCT's WCAG and patterns tiers serve the app as
-shipped.
 
 ### Headlamp
 
