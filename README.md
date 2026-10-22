@@ -210,7 +210,7 @@ Open MCT's WCAG dip is one task. Reordering frames in a Flexible Layout is a dra
 
 </details>
 
-Per-run data, methods and limits for each app: [what-iff](results/published/what-iff/README.md) · [Headlamp](results/published/headlamp/README.md) · [Open MCT](results/published/openmct/README.md).
+Per-run data, methods and limits for each app: [what-iff](results/published/what-iff/README.md) · [Headlamp](results/published/headlamp/README.md) · [Open MCT](results/published/openmct/README.md) · [webmcp-demo](results/published/webmcp-demo/README.md).
 
 ## Takeaway
 
@@ -223,6 +223,7 @@ Per-run data, methods and limits for each app: [what-iff](results/published/what
 | [what-iff](https://github.com/theimaginaryfoundation/what-iff) | AI assistant · Angular, Go | Measured: 4 tasks, 144 runs. Tiers, seed, graders and runner are on the [`ax-tiers`](https://github.com/neupenguin/what-iff/tree/ax-tiers) branch of a fork. |
 | [Headlamp](https://github.com/kubernetes-sigs/headlamp) | Kubernetes UI · React, MUI | Measured: 5 tasks graded with kubectl, 180 runs. Tier patches pass the pixel and axe gates. |
 | [Open MCT](https://github.com/nasa/openmct) | Mission control · Vue | Measured: 5 tasks graded from CouchDB, 180 runs. Tier patches pass the pixel and axe gates. |
+| [webmcp-demo](https://github.com/sdras/webmcp-demo) | WebMCP explainer · vanilla JS | Measured: 5 tasks graded from a booking log, 180 runs. Tier patches pass the pixel and axe gates. Not yet in the cross-app tables above. |
 
 ## Run every app in every tier
 
@@ -238,6 +239,7 @@ alias ax='node dist/harness/src/cli.js'
 |---|---|---|---|
 | Headlamp | `ax serve --app headlamp --tier div-soup` → http://localhost:4466 | `--tier wcag` → http://localhost:4467 | `--tier patterns` → http://localhost:4468 |
 | Open MCT | `ax serve --app openmct --tier div-soup` → http://localhost:8090 | `--tier wcag` → http://localhost:8091 | `--tier patterns` → http://localhost:8092 |
+| webmcp-demo | `ax serve --app webmcp-demo --tier div-soup` → http://localhost:8190 | `--tier wcag` → http://localhost:8191 | `--tier patterns` → http://localhost:8192 |
 | what-iff | http://localhost:4200/memories?ax=3 | http://localhost:4200/memories?ax=0 | http://localhost:4200/memories?ax=4 |
 
 ### Headlamp
@@ -259,6 +261,15 @@ ax prepare --app openmct
 ax seed --app openmct                # starts CouchDB on :5984 and seeds it
 ax serve --app openmct --tier div-soup
 ax grade --app openmct --task O1
+```
+
+### webmcp-demo
+
+```bash
+ax prepare --app webmcp-demo
+ax seed --app webmcp-demo            # empties the booking log
+ax serve --app webmcp-demo --tier wcag
+ax grade --app webmcp-demo --task M1 # after booking in the browser
 ```
 
 ### what-iff

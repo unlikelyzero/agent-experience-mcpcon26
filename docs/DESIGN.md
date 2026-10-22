@@ -251,7 +251,7 @@ another.
 5. Headlamp tier patches, each passing the pixel gate: `div-soup` (done for
    the task paths), `wcag` (done, axe-clean), `patterns` (done for the task
    paths: APG dialog patterns plus hints). All three pixel-identical.
-6. `ax run` and `ax report` (done): 180 agent runs each on Headlamp and Open MCT, published under
+6. `ax run` and `ax report` (done): 180 agent runs each on Headlamp, Open MCT and webmcp-demo, published under
    `results/published/`. `ax eval roles` is not built.
 7. what-iff: tiers, seed, graders and agent runs done on the fork's `ax-tiers`
    branch, and results published. Still to do: port the seed and graders into
@@ -647,6 +647,8 @@ the example id for M4, the disabled 11 AM and the Run agent demo for M5).
 
 Every tier leaves the WebMCP code (`registerTool` and the three tool definitions) byte-identical
 to shipped. Each tier's commit in `.work/webmcp-demo/<tier>` lists what it touches.
+
+Results: [`results/published/webmcp-demo`](../results/published/webmcp-demo/README.md).
 
 **`div-soup`** (`tiers/div-soup.patch`, 3 files)
 
