@@ -1,0 +1,19 @@
+div-soup: wcag 2, visual 0, best-practice 338 (nodes)
+  deployments    best-practice landmark-one-main ×1  Document should have one main landmark
+  deployments    best-practice region ×59  All page content should be contained by landmarks
+  deployment     best-practice landmark-one-main ×1  Document should have one main landmark
+  deployment     best-practice region ×20  All page content should be contained by landmarks
+  scale-dialog   wcag          label ×1  Form elements must have labels
+  scale-dialog   best-practice region ×5  All page content should be contained by landmarks
+  pods           best-practice landmark-one-main ×1  Document should have one main landmark
+  pods           best-practice region ×140  All page content should be contained by landmarks
+  pod            best-practice landmark-one-main ×1  Document should have one main landmark
+  pod            best-practice region ×11  All page content should be contained by landmarks
+  cronjob        best-practice landmark-one-main ×1  Document should have one main landmark
+  cronjob        best-practice region ×8  All page content should be contained by landmarks
+  configmaps     best-practice landmark-one-main ×1  Document should have one main landmark
+  configmaps     best-practice region ×84  All page content should be contained by landmarks
+  delete-dialog  wcag          label ×1  Form elements must have labels
+  delete-dialog  best-practice region ×5  All page content should be contained by landmarks
+wcag: wcag 0, visual 0, best-practice 0 (nodes)  WCAG-clean
+patterns: wcag 0, visual 0, best-practice 0 (nodes)  WCAG-clean
