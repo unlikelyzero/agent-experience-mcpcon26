@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [headlamp, openmct, what-iff]
+        app: [headlamp, openmct, webmcp-demo, what-iff]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
