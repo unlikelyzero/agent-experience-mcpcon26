@@ -229,6 +229,14 @@ Described tools made the markup irrelevant and the task cheap. Undescribed tools
 
 Per-run data, methods and limits for each app: [what-iff](results/published/what-iff/README.md) · [Headlamp](results/published/headlamp/README.md) · [Open MCT](results/published/openmct/README.md) · [webmcp-demo](results/published/webmcp-demo/README.md).
 
+## Head to head
+
+The same task, recorded: Claude Haiku 4.5 on div soup against Claude Opus 5.5 on WCAG, with each agent's steps logged beside its browser.
+
+[![Haiku 4.5 on div soup fails after 118 seconds; Opus 5.5 on WCAG passes in 45](demo/head-to-head/preview.png)](demo/head-to-head/)
+
+Haiku clicked an unnamed `<div>` to look at the wrong memory, and the click starred it. Nothing announced the change, and Haiku reported the task complete. The deck plays both runs in sync: [`demo/head-to-head`](demo/head-to-head/).
+
 ## Takeaway
 
 **Accessibility is for people first. Agents benefit too.** The names, roles and state that blind and low-vision people rely on through screen readers are the same interface a browser agent reads. Build it properly for people and agents can use it as well.
@@ -329,4 +337,5 @@ harness/src/              the `ax` CLI: prepare, diff, patches, serve, seed, gra
 apps/<app>/               adapter, fixtures, graders and tiers/<tier>.patch per app
 results/published/        the numbers the poster quotes, with per-run CSVs
 poster/                   source of the printed poster and its render script
+demo/head-to-head/        reveal.js deck replaying two recorded runs side by side
 ```
