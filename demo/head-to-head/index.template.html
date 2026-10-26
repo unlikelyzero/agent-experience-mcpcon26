@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Head to head: div soup vs WCAG</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <section id="title" class="section-divider" data-state="is-section-divider">
+        <p class="kicker">AGNTCon + MCPCon North America 2026 · Agent Experience (AX)</p>
+        <h1>Same pixels. Same task.<br>Two very different runs.</h1>
+        <p class="text-xl text-muted">A small model on div soup against a frontier model on WCAG markup, recorded through Playwright MCP.</p>
+      </section>
+
+      <section id="head-to-head">
+        <p class="kicker">what-iff · Memory Manager · __TASK__</p>
+        <p class="task">“__PROMPT__”</p>
+        <div class="h2h">
+          <div class="lane soup" id="soup">
+            <div class="head"><p>__SOUP_LABEL__</p><p class="clock">0.0s</p></div>
+            <video src="soup.webm" muted playsinline preload="auto"></video>
+            <div class="steps"></div>
+            <p class="verdict"></p>
+          </div>
+          <div class="lane wcag" id="wcag">
+            <div class="head"><p>__WCAG_LABEL__</p><p class="clock">0.0s</p></div>
+            <video src="wcag.webm" muted playsinline preload="auto"></video>
+            <div class="steps"></div>
+            <p class="verdict"></p>
+          </div>
+        </div>
+        <div class="controls-row">
+          <button id="play">Play both</button>
+          <button data-rate="1">1×</button><button data-rate="2">2×</button><button data-rate="4">4×</button>
+          <p>Steps come from each agent's transcript, timed to the moment it issued them.</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    const RUNS = { soup: __SOUP_JSON__, wcag: __WCAG_JSON__ };
+    const fmt = t => `${t.toFixed(1)}s`;
+    for (const [id, run] of Object.entries(RUNS)) {
+      const lane = document.getElementById(id);
+      lane.querySelector('.steps').innerHTML = run.steps.map(s =>
+        `<p class="${s.kind}"><span class="t">${fmt(s.t)}</span><span class="v">${s.verb}</span>${s.detail.replace(/</g, '&lt;')}</p>`).join('');
+      const v = lane.querySelector('.verdict');
+      v.textContent = run.verdict.text; v.classList.add(run.verdict.pass ? 'pass' : 'fail');
+    }
+    function tick() {
+      for (const [id, run] of Object.entries(RUNS)) {
+        const lane = document.getElementById(id), video = lane.querySelector('video');
+        // The recording drops frames under load, so map video time linearly onto the run's wall clock.
+        const now = video.currentTime * (video.duration ? run.end / video.duration : 1);
+        lane.querySelector('.clock').textContent = `${fmt(now)} · ${run.toolCalls} tool calls`;
+        const rows = [...lane.querySelectorAll('.steps p')];
+        let last = -1;
+        run.steps.forEach((s, i) => { rows[i].classList.toggle('done', s.t <= now); if (s.t <= now) last = i; rows[i].classList.remove('now'); });
+        if (last >= 0) { rows[last].classList.add('now'); const box = lane.querySelector('.steps'); box.scrollTop = Math.max(0, rows[last].offsetTop - box.clientHeight + 40); }
+        lane.querySelector('.verdict').classList.toggle('show', video.ended);
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    const videos = () => [...document.querySelectorAll('.lane video')];
+    // The recordings have no seek index, so restart by reloading rather than seeking.
+    let rate = 1;
+    document.getElementById('play').onclick = () => videos().forEach(v => { v.load(); v.playbackRate = rate; v.play(); });
+    document.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => { rate = +b.dataset.rate; videos().forEach(v => v.playbackRate = rate); });
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: false,
+      hash: true,
+      transition: 'slide',
+      center: false,
+      plugins: [],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(0, 0, 0, 0.8)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+</body>
+</html>

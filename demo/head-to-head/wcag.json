@@ -1,0 +1,149 @@
+{
+ "steps": [
+  {
+   "t": 0,
+   "kind": "tool",
+   "verb": "navigate",
+   "detail": "/memories?ax=0"
+  },
+  {
+   "t": 3.14,
+   "kind": "tool",
+   "verb": "read",
+   "detail": "accessibility tree"
+  },
+  {
+   "t": 5.6,
+   "kind": "tool",
+   "verb": "fill",
+   "detail": "2 fields"
+  },
+  {
+   "t": 5.84,
+   "kind": "tool",
+   "verb": "click",
+   "detail": "button “Sign in”"
+  },
+  {
+   "t": 8.67,
+   "kind": "tool",
+   "verb": "navigate",
+   "detail": "/memories?ax=0"
+  },
+  {
+   "t": 10.53,
+   "kind": "tool",
+   "verb": "find",
+   "detail": "Lisbon"
+  },
+  {
+   "t": 12.34,
+   "kind": "say",
+   "verb": "says",
+   "detail": "Signed in and on the Memory Manager; looking for the Lisbon memory."
+  },
+  {
+   "t": 12.41,
+   "kind": "tool",
+   "verb": "read",
+   "detail": "accessibility tree"
+  },
+  {
+   "t": 14.69,
+   "kind": "say",
+   "verb": "says",
+   "detail": "Not in the User tab; checking the Thread tab."
+  },
+  {
+   "t": 14.92,
+   "kind": "tool",
+   "verb": "click",
+   "detail": "tab “Thread”"
+  },
+  {
+   "t": 17.99,
+   "kind": "tool",
+   "verb": "find",
+   "detail": "/lisbon|9:40/i"
+  },
+  {
+   "t": 21.63,
+   "kind": "tool",
+   "verb": "script",
+   "detail": "() => [...document.querySelectorAll('[role=listitem] p, li p')].map(p…"
+  },
+  {
+   "t": 24.48,
+   "kind": "tool",
+   "verb": "click",
+   "detail": "button “More actions”"
+  },
+  {
+   "t": 27.09,
+   "kind": "tool",
+   "verb": "find",
+   "detail": "/menuitem/"
+  },
+  {
+   "t": 29.18,
+   "kind": "tool",
+   "verb": "click",
+   "detail": "menuitem “Edit”"
+  },
+  {
+   "t": 31.71,
+   "kind": "say",
+   "verb": "says",
+   "detail": "Opened the edit form for the Lisbon flight memory; updating the time now."
+  },
+  {
+   "t": 32.12,
+   "kind": "tool",
+   "verb": "find",
+   "detail": "/textbox|button \"(Save|Cancel)/"
+  },
+  {
+   "t": 34.73,
+   "kind": "tool",
+   "verb": "fill",
+   "detail": "1 fields"
+  },
+  {
+   "t": 34.96,
+   "kind": "tool",
+   "verb": "click",
+   "detail": "button “Save”"
+  },
+  {
+   "t": 38.54,
+   "kind": "say",
+   "verb": "says",
+   "detail": "Verifying after refresh:"
+  },
+  {
+   "t": 38.89,
+   "kind": "tool",
+   "verb": "click",
+   "detail": "button “Refresh memories”"
+  },
+  {
+   "t": 39.48,
+   "kind": "tool",
+   "verb": "script",
+   "detail": "() => [...document.querySelectorAll('li p, [role=listitem] p')].map(p…"
+  },
+  {
+   "t": 43.71,
+   "kind": "say",
+   "verb": "says",
+   "detail": "I changed the Lisbon flight memory from \"Flight to Lisbon is at 9:40 on Friday\" to \"Flight to Lisbon is at 10:15 on Friday\". It's in the Thread tab under \"Lisb…"
+  }
+ ],
+ "verdict": {
+  "pass": true,
+  "text": "Passed. Checked against the app's data, not the agent's word."
+ },
+ "end": 45.19,
+ "toolCalls": 18,
+ "tokens": 291225
+}
