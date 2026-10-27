@@ -16,13 +16,42 @@
    "t": 5.6,
    "kind": "tool",
    "verb": "fill",
-   "detail": "2 fields"
+   "detail": "2 fields",
+   "tree": {
+    "lines": [
+     "  - paragraph: Welcome to WhatIff",
+     "- generic:",
+     "  - generic:",
+     "    - generic:",
+     "      - generic: Username or Email",
+     "      - textbox \"Username or Email\":",
+     "        - /placeholder: Enter your username or email",
+     "    - generic:",
+     "      - generic: Password",
+     "      - generic:"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 5.84,
    "kind": "tool",
    "verb": "click",
-   "detail": "button “Sign in”"
+   "detail": "button “Sign in”",
+   "tree": {
+    "lines": [
+     "        - /placeholder: Enter your password",
+     "      - button \"Show password\"",
+     "  - generic:",
+     "    - checkbox \"Remember me\"",
+     "    - generic: Remember me",
+     "- button \"Sign in\" [disabled]",
+     "- paragraph:",
+     "  - text: Don't have an account?",
+     "  - button \"Sign up here\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 8.67,
@@ -58,7 +87,22 @@
    "t": 14.92,
    "kind": "tool",
    "verb": "click",
-   "detail": "tab “Thread”"
+   "detail": "tab “Thread”",
+   "tree": {
+    "lines": [
+     "      - option \"Yours\"",
+     "      - option \"External\"",
+     "  - button \"Clear\"",
+     "- tablist \"Memory status\":",
+     "  - tab \"User\" [selected]",
+     "  - tab \"Thread\"",
+     "  - tab \"Summaries\"",
+     "  - tab \"Archived\"",
+     "- list \"Memories\":",
+     "  - listitem:"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 17.99,
@@ -76,7 +120,22 @@
    "t": 24.48,
    "kind": "tool",
    "verb": "click",
-   "detail": "button “More actions”"
+   "detail": "button “More actions”",
+   "tree": {
+    "lines": [
+     "      - generic:",
+     "        - generic: Lisbon trip",
+     "        - generic: Thread",
+     "      - generic:",
+     "        - generic: Oct 21",
+     "        - button \"More actions\": ⋮",
+     "    - paragraph: Flight to Lisbon is at 9:40 on Friday",
+     "    - generic: 60% · Medium confidence",
+     "- listitem:",
+     "  - checkbox \"Select memory\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 27.09,
@@ -88,7 +147,22 @@
    "t": 29.18,
    "kind": "tool",
    "verb": "click",
-   "detail": "menuitem “Edit”"
+   "detail": "menuitem “Edit”",
+   "tree": {
+    "lines": [
+     "- generic:",
+     "  - generic:",
+     "    - generic:",
+     "      - button \"More actions\" [expanded] [active]: ⋮",
+     "      - menu:",
+     "        - menuitem \"Edit\"",
+     "        - menuitem \"Move\"",
+     "        - menuitem \"Star\"",
+     "        - menuitem \"Archive\"",
+     "        - menuitem \"Delete\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 31.71,
@@ -106,13 +180,42 @@
    "t": 34.73,
    "kind": "tool",
    "verb": "fill",
-   "detail": "1 fields"
+   "detail": "1 fields",
+   "tree": {
+    "lines": [
+     "  - generic:",
+     "    - generic: Oct 21",
+     "    - button \"More actions\": ⋮",
+     "- generic:",
+     "  - textbox: Flight to Lisbon is at 9:40 on Friday",
+     "  - generic:",
+     "    - button \"Save\"",
+     "    - button \"Cancel\"",
+     "- generic: 60% · Medium confidence"
+    ],
+    "hit": 4
+   }
   },
   {
    "t": 34.96,
    "kind": "tool",
    "verb": "click",
-   "detail": "button “Save”"
+   "detail": "button “Save”",
+   "tree": {
+    "lines": [
+     "        - generic: Oct 21",
+     "        - button \"More actions\": ⋮",
+     "    - generic:",
+     "      - textbox: Flight to Lisbon is at 9:40 on Friday",
+     "      - generic:",
+     "        - button \"Save\"",
+     "        - button \"Cancel\"",
+     "    - generic: 60% · Medium confidence",
+     "- listitem:",
+     "  - checkbox \"Select memory\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 38.54,
@@ -124,7 +227,22 @@
    "t": 38.89,
    "kind": "tool",
    "verb": "click",
-   "detail": "button “Refresh memories”"
+   "detail": "button “Refresh memories”",
+   "tree": {
+    "lines": [
+     "  - tab \"Compaction log\"",
+     "- generic:",
+     "  - generic: 14 memories· retrieval isn't perfect — review and …",
+     "  - generic:",
+     "    - searchbox \"Search memories\"",
+     "    - button \"Refresh memories\": ↻",
+     "  - generic \"Memory filters\":",
+     "    - generic:",
+     "      - generic: Personality",
+     "      - combobox \"Personality\":"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 39.48,

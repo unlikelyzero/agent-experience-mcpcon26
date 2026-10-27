@@ -28,13 +28,42 @@
    "t": 4.45,
    "kind": "tool",
    "verb": "fill",
-   "detail": "2 fields"
+   "detail": "2 fields",
+   "tree": {
+    "lines": [
+     "  - paragraph: Welcome to WhatIff",
+     "- generic:",
+     "  - generic:",
+     "    - generic:",
+     "      - generic: Username or Email",
+     "      - textbox \"Username or Email\":",
+     "        - /placeholder: Enter your username or email",
+     "    - generic:",
+     "      - generic: Password",
+     "      - generic:"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 6.45,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Sign in button”"
+   "detail": "“Sign in button”",
+   "tree": {
+    "lines": [
+     "        - /placeholder: Enter your password",
+     "      - button \"Show password\"",
+     "  - generic:",
+     "    - checkbox \"Remember me\"",
+     "    - generic: Remember me",
+     "- button \"Sign in\" [disabled]",
+     "- paragraph:",
+     "  - text: Don't have an account?",
+     "  - button \"Sign up here\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 9.09,
@@ -64,13 +93,43 @@
    "t": 15.22,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Search memories box”"
+   "detail": "“Search memories box”",
+   "tree": {
+    "lines": [
+     "  - generic: Merge history",
+     "  - generic: Compaction log",
+     "- generic:",
+     "  - generic: 14 memories· retrieval isn't perfect — review and …",
+     "  - generic:",
+     "    - searchbox \"Search memories…\"",
+     "    - generic: ↻",
+     "  - generic:",
+     "    - generic:",
+     "      - generic: Personality"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 17.08,
    "kind": "tool",
    "verb": "type",
-   "detail": "“Lisbon” into searchbox “Search memories…”"
+   "detail": "“Lisbon” into searchbox “Search memories…”",
+   "tree": {
+    "lines": [
+     "  - generic: Merge history",
+     "  - generic: Compaction log",
+     "- generic:",
+     "  - generic: 14 memories· retrieval isn't perfect — review and …",
+     "  - generic:",
+     "    - searchbox \"Search memories…\"",
+     "    - generic: ↻",
+     "  - generic:",
+     "    - generic:",
+     "      - generic: Personality"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 18.35,
@@ -88,13 +147,43 @@
    "t": 21.47,
    "kind": "tool",
    "verb": "triple_click",
-   "detail": "searchbox “Search memories…”"
+   "detail": "searchbox “Search memories…”",
+   "tree": {
+    "lines": [
+     "  - generic: Merge history",
+     "  - generic: Compaction log",
+     "- generic:",
+     "  - generic: 14 memories· retrieval isn't perfect — review and …",
+     "  - generic:",
+     "    - searchbox \"Search memories…\" [active]: Lisbon",
+     "    - generic: ↻",
+     "  - generic:",
+     "    - generic:",
+     "      - generic: Personality"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 23.56,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Search box”"
+   "detail": "“Search box”",
+   "tree": {
+    "lines": [
+     "  - generic: Merge history",
+     "  - generic: Compaction log",
+     "- generic:",
+     "  - generic: 14 memories· retrieval isn't perfect — review and …",
+     "  - generic:",
+     "    - searchbox \"Search memories…\" [active]: Lisbon",
+     "    - generic: ↻",
+     "  - generic:",
+     "    - generic:",
+     "      - generic: Personality"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 25.38,
@@ -106,7 +195,22 @@
    "t": 26.6,
    "kind": "tool",
    "verb": "type",
-   "detail": "“9:40” into searchbox “Search memories…”"
+   "detail": "“9:40” into searchbox “Search memories…”",
+   "tree": {
+    "lines": [
+     "  - generic: Merge history",
+     "  - generic: Compaction log",
+     "- generic:",
+     "  - generic: 14 memories· retrieval isn't perfect — review and …",
+     "  - generic:",
+     "    - searchbox \"Search memories…\" [active]: Lisbon",
+     "    - generic: ↻",
+     "  - generic:",
+     "    - generic:",
+     "      - generic: Personality"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 27.85,
@@ -154,7 +258,22 @@
    "t": 38.92,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Clear button”"
+   "detail": "“Clear button”",
+   "tree": {
+    "lines": [
+     "    - generic: Source",
+     "    - combobox:",
+     "      - option \"All\" [selected]",
+     "      - option \"Yours\"",
+     "      - option \"External\"",
+     "  - button \"Clear\"",
+     "- generic:",
+     "  - generic: User",
+     "  - generic: Thread",
+     "  - generic: Summaries"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 41.32,
@@ -202,7 +321,22 @@
    "t": 56.14,
    "kind": "bad",
    "verb": "click",
-   "detail": "“Prefers aisle seats on flights memory” (this unlabeled click also starred it)"
+   "detail": "“Prefers aisle seats on flights memory” (this unlabeled click also starred it)",
+   "tree": {
+    "lines": [
+     "      - generic:",
+     "        - generic: Oct 21",
+     "        - generic: ⋮",
+     "    - paragraph: Partner is allergic to peanuts",
+     "    - generic: 60% · Medium confidence",
+     "- article:",
+     "  - generic: TP",
+     "  - generic:",
+     "    - generic:",
+     "      - generic:"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 59.43,
@@ -220,7 +354,22 @@
    "t": 64.55,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Close detail panel button”"
+   "detail": "“Close detail panel button”",
+   "tree": {
+    "lines": [
+     "        - generic: 60% · Medium confidence",
+     "- complementary:",
+     "  - generic:",
+     "    - generic: Personality",
+     "    - generic:",
+     "      - button",
+     "      - button \"→\"",
+     "  - heading \"Prefers aisle seats on flights\" [level=2]",
+     "  - generic:",
+     "    - heading \"Dates\" [level=3]"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 68.78,
@@ -238,7 +387,22 @@
    "t": 73.67,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Thread tab”"
+   "detail": "“Thread tab”",
+   "tree": {
+    "lines": [
+     "      - option \"Yours\"",
+     "      - option \"External\"",
+     "  - button \"Clear\"",
+     "- generic:",
+     "  - generic: User",
+     "  - generic: Thread",
+     "  - generic: Summaries",
+     "  - generic: Archived",
+     "- generic:",
+     "  - article:"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 76.79,
@@ -256,7 +420,22 @@
    "t": 79.75,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Flight to Lisbon is at 9:40 on Friday memory”"
+   "detail": "“Flight to Lisbon is at 9:40 on Friday memory”",
+   "tree": {
+    "lines": [
+     "      - generic:",
+     "        - generic: Oct 21",
+     "        - generic: ⋮",
+     "    - paragraph: Flight to Chicago for the offsite is at 7:15 o…",
+     "    - generic: 60% · Medium confidence",
+     "- article:",
+     "  - generic:",
+     "    - generic:",
+     "      - generic:",
+     "        - generic: Lisbon trip"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 81.76,
@@ -274,7 +453,21 @@
    "t": 84.45,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Edit button”"
+   "detail": "“Edit button”",
+   "tree": {
+    "lines": [
+     "            - paragraph:",
+     "              - text: No merge events for this memory.",
+     "              - link \"Open merge history\":",
+     "                - /url: /memories?tab=merge-history",
+     "          - generic:",
+     "            - button \"Edit\"",
+     "            - button \"Archive\"",
+     "            - button \"Delete\"",
+     "- generic \"Choose a Personality\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 87.23,
@@ -292,13 +485,43 @@
    "t": 91.24,
    "kind": "tool",
    "verb": "triple_click",
-   "detail": "textbox “Content”"
+   "detail": "textbox “Content”",
+   "tree": {
+    "lines": [
+     "- generic:",
+     "  - paragraph: \"Memory level: Thread\"",
+     "  - paragraph: Used only in the thread it came from. To use a t…",
+     "- generic:",
+     "  - text: Content",
+     "  - textbox \"Content\": Flight to Lisbon is at 9:40 on Friday",
+     "- generic:",
+     "  - button \"Delete\"",
+     "  - generic:",
+     "    - button \"Cancel\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 93.45,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Content textbox”"
+   "detail": "“Content textbox”",
+   "tree": {
+    "lines": [
+     "- generic:",
+     "  - paragraph: \"Memory level: Thread\"",
+     "  - paragraph: Used only in the thread it came from. To use a t…",
+     "- generic:",
+     "  - text: Content",
+     "  - textbox \"Content\": Flight to Lisbon is at 9:40 on Friday",
+     "- generic:",
+     "  - button \"Delete\"",
+     "  - generic:",
+     "    - button \"Cancel\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 96.27,
@@ -310,7 +533,22 @@
    "t": 97.73,
    "kind": "tool",
    "verb": "type",
-   "detail": "“Flight to Lisbon is at 10:15 on Friday” into textbox “Content”"
+   "detail": "“Flight to Lisbon is at 10:15 on Friday” into textbox “Content”",
+   "tree": {
+    "lines": [
+     "- generic:",
+     "  - paragraph: \"Memory level: Thread\"",
+     "  - paragraph: Used only in the thread it came from. To use a t…",
+     "- generic:",
+     "  - text: Content",
+     "  - textbox \"Content\": Flight to Lisbon is at 9:40 on Friday",
+     "- generic:",
+     "  - button \"Delete\"",
+     "  - generic:",
+     "    - button \"Cancel\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 99.58,
@@ -328,7 +566,22 @@
    "t": 102.06,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Save changes button”"
+   "detail": "“Save changes button”",
+   "tree": {
+    "lines": [
+     "    - textbox \"Content\" [active]: Flight to Lisbon is at 10:15 …",
+     "  - generic:",
+     "    - button \"Delete\"",
+     "    - generic:",
+     "      - button \"Cancel\"",
+     "      - button \"Save changes\"",
+     "- complementary:",
+     "  - heading \"Metadata\" [level=2]",
+     "  - generic:",
+     "    - generic:"
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 105.96,
@@ -346,7 +599,22 @@
    "t": 109.57,
    "kind": "tool",
    "verb": "click",
-   "detail": "“Back to memories button”"
+   "detail": "“Back to memories button”",
+   "tree": {
+    "lines": [
+     "      - generic [aria-hidden]: ⌘K",
+     "    - button \"Open profile for e2e-9f3ea8df-3bf1-458a-8439-1de1…",
+     "      - generic [aria-hidden]: e2e-9f3ea8df-3bf1-458a-8439-1de1…",
+     "- main:",
+     "  - generic:",
+     "    - button \"Back to memories\"",
+     "    - generic:",
+     "      - generic:",
+     "        - generic:",
+     "          - paragraph: \"Memory level: Thread\""
+    ],
+    "hit": 5
+   }
   },
   {
    "t": 112.26,

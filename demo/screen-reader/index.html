@@ -41,6 +41,12 @@
     .tree .ln { display: block; padding: 0 6px; margin: 0 -6px; border-radius: 4px; transition: background .15s, color .15s; }
     .tree .ln.live { background: rgba(0,172,214,.28); color: #fff; box-shadow: inset 3px 0 0 var(--primary-color); }
     .reveal ul.said li { transition: color .15s; } .reveal ul.said li.live { color: var(--primary-color); }
+    .acttree { background: #171829; border-radius: 6px; padding: 8px 10px; min-height: 0; overflow: hidden; }
+    .reveal .acttree p { margin: 0; font: 9.5pt/1.4 "IBM Plex Mono", monospace; white-space: pre; color: #8E91B4; overflow: hidden; text-overflow: ellipsis; }
+    .reveal .acttree p.cap { white-space: nowrap; color: var(--muted-color); font-family: var(--body-font); font-size: 9.5pt; margin-bottom: 4px; }
+    .reveal .acttree p.hit { color: #fff; background: color-mix(in srgb, var(--lane) 35%, transparent); box-shadow: inset 3px 0 0 var(--lane); border-radius: 3px; }
+    .solo .lane.side { grid-template-rows: auto 1fr auto !important; }
+    #h2h-run .lane { grid-template-rows: auto 190px 1fr auto auto; } #h2h-run .lane video { height: 190px; } #h2h-run .acttree { max-height: 152px; }
   </style>
 </head>
 <body>
@@ -87,7 +93,7 @@
             <video src="../head-to-head/soup.webm" muted playsinline preload="auto"></video>
             <p class="verdict"></p>
           </div>
-          <div class="lane soup"><div class="head"><p>Agent steps</p><p></p></div><div class="steps" data-run="soup"></div></div>
+          <div class="lane soup side"><div class="head"><p>Agent steps</p><p></p></div><div class="steps" data-run="soup"></div><div class="acttree" data-run="soup"></div></div>
         </div>
         <div class="controls-row">
           <button class="play">Play</button>
@@ -117,12 +123,14 @@
             <div class="head"><p>Claude Haiku 4.5 · Div soup</p><p class="clock">0.0s</p></div>
             <video src="../head-to-head/soup.webm" muted playsinline preload="auto"></video>
             <div class="steps" data-run="soup"></div>
+            <div class="acttree" data-run="soup"></div>
             <p class="verdict"></p>
           </div>
           <div class="lane wcag" data-run="wcag">
             <div class="head"><p>Claude Opus 5.5 · WCAG</p><p class="clock">0.0s</p></div>
             <video src="../head-to-head/wcag.webm" muted playsinline preload="auto"></video>
             <div class="steps" data-run="wcag"></div>
+            <div class="acttree" data-run="wcag"></div>
             <p class="verdict"></p>
           </div>
         </div>
@@ -245,7 +253,7 @@
     // Recorded runs: sync each step log to its video. The webm files can't seek, so Play reloads them.
     (async () => {
       const runs = {};
-      for (const k of ['soup', 'wcag']) runs[k] = await (await fetch(`../head-to-head/${k}.json`)).json();
+      for (const k of ['soup', 'wcag']) runs[k] = await (await fetch(`../head-to-head/${k}.json`, { cache: 'no-cache' })).json();
       const fmt = t => `${t.toFixed(1)}s`;
       for (const section of document.querySelectorAll('#soup-run, #h2h-run')) {
         const lanes = [...section.querySelectorAll('.lane[data-run]')].map(lane => {
@@ -253,11 +261,13 @@
           box.innerHTML = run.steps.map(s => `<p class="${s.kind}"><span class="t">${fmt(s.t)}</span><span class="v">${s.verb}</span>${s.detail.replace(/</g, '&lt;')}</p>`).join('');
           const v = lane.querySelector('.verdict');
           v.textContent = run.verdict.text; v.classList.add(run.verdict.pass ? 'pass' : 'fail');
-          return { run, box, v, rows: [...box.children], video: lane.querySelector('video'), clock: lane.querySelector('.clock') };
+          const tree = section.querySelector(`.acttree[data-run="${lane.dataset.run}"]`);
+          return { run, box, v, tree, shownTree: undefined, rows: [...box.children], video: lane.querySelector('video'), clock: lane.querySelector('.clock') };
         });
         let rate = 2;
         (function tick() {
-          for (const { run, box, v, rows, video, clock } of lanes) {
+          for (const lane of lanes) {
+            const { run, box, v, rows, video, clock, tree } = lane;
             // The recording drops frames under load, so map video time linearly onto the run's wall clock.
             const now = video.currentTime * (video.duration ? run.end / video.duration : 1);
             clock.textContent = `${fmt(now)} · ${run.toolCalls} tool calls`;
@@ -265,6 +275,16 @@
             run.steps.forEach((s, i) => { rows[i].classList.toggle('done', s.t <= now); rows[i].classList.remove('now'); if (s.t <= now) last = i; });
             if (last >= 0) { rows[last].classList.add('now'); box.scrollTop = Math.max(0, rows[last].offsetTop - box.clientHeight + 60); }
             v.classList.toggle('show', video.ended);
+            // The accessibility tree around the element the agent last acted on, that element lit.
+            let act = null;
+            run.steps.forEach(s => { if (s.tree && s.t <= now) act = s; });
+            if (tree && act !== lane.shownTree) {
+              lane.shownTree = act;
+              const esc = x => x.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+              tree.innerHTML = act
+                ? `<p class="cap">${esc(act.verb)} ${esc(act.detail)}</p>` + act.tree.lines.map((l, i) => `<p${i === act.tree.hit ? ' class="hit"' : ''}>${esc(l)}</p>`).join('')
+                : '<p class="cap">The tree around each element the agent acts on appears here.</p>';
+            }
           }
           requestAnimationFrame(tick);
         })();

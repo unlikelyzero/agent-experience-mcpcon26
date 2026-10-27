@@ -13,10 +13,27 @@ const grade = JSON.parse(readFileSync(join(dir, 'grade.json'), 'utf8'));
 const clip = (s, n = 90) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 // ref -> 'role "name"' from the accessibility snapshots the agent has read so far.
 const refs = new Map();
+// ref -> the lines of the latest tool result that showed it, for the tree excerpt around an action.
+const seen = new Map();
 function learnRefs(text) {
   for (const m of text.matchAll(/-\s+([a-z]+)(?:\s+"([^"]*)")?[^\n]*?\[ref=([a-z0-9]+)\]/g))
     refs.set(m[3], m[2] ? `${m[1]} “${clip(m[2], 50)}”` : `${m[1]} (no name)`);
+  const lines = text.split('\n');
+  lines.forEach((l, i) => { const m = l.match(/\[ref=([a-z0-9]+)\]/); if (m) seen.set(m[1], { lines, i }); });
 }
+// A few tree lines around the acted-on ref, dedented, without ref/cursor noise; `hit` is its row.
+function excerpt(ref, before = 5, after = 4) {
+  const at = seen.get(ref);
+  if (!at) return undefined;
+  const isTree = l => /^\s*- /.test(l);
+  let a = at.i, b = at.i;
+  while (a > 0 && at.i - a < before && isTree(at.lines[a - 1])) a--;
+  while (b < at.lines.length - 1 && b - at.i < after && isTree(at.lines[b + 1])) b++;
+  const rows = at.lines.slice(a, b + 1);
+  const pad = Math.min(...rows.map(l => l.match(/^\s*/)[0].length));
+  return { lines: rows.map(l => clip(l.slice(pad).replace(/ \[(ref=[a-z0-9]+|cursor=pointer)\]/g, ''), 64)), hit: at.i - a };
+}
+const refOf = input => input.target ?? input.ref ?? input.fields?.[0]?.target ?? input.fields?.[0]?.ref;
 function describe(name, input) {
   const tool = name.replace('mcp__playwright__browser_', '');
   const ref = input.target ?? input.ref;
@@ -53,7 +70,8 @@ lines.forEach((line, i) => {
     if (c.type === 'tool_use' && c.name.startsWith('mcp__playwright__browser_')) {
       if (t0 === null) t0 = t;
       const [verb, detail] = describe(c.name, c.input ?? {});
-      steps.push({ t, kind: verb === 'screenshot' ? 'warn' : 'tool', verb, detail });
+      const ref = refOf(c.input ?? {});
+      steps.push({ t, kind: verb === 'screenshot' ? 'warn' : 'tool', verb, detail, ...(ref && excerpt(ref) ? { tree: excerpt(ref) } : {}) });
     } else if (c.type === 'text' && c.text.trim()) {
       steps.push({ t, kind: 'say', verb: 'says', detail: clip(c.text.trim().replace(/\s+/g, ' '), 160) });
     } else if (c.type === 'thinking' && c.thinking?.trim()) {
