@@ -32,6 +32,12 @@
     .flow h4 { font-size: 15pt; margin: 0 0 8px; color: var(--text-color); text-transform: none; }
     .flow p { font-size: 11.5pt; line-height: 1.4; margin: 0; color: var(--muted-color); }
     .flow div.grade { border-top-color: #5FD08A; } .flow div.grade b { color: #5FD08A; }
+    .solo { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; height: 470px; text-align: left; }
+    .solo .lane { grid-template-rows: auto 1fr auto; }
+    .solo .lane:last-child { grid-template-rows: auto 1fr; }
+    .solo .lane video { height: 100%; min-height: 0; }
+    .reveal .solo .steps p { white-space: normal; font-size: 10pt; }
+    .reveal .verdict { display: none; } .reveal .verdict.show { display: block; }
   </style>
 </head>
 <body>
@@ -77,6 +83,24 @@
         </div>
       </section>
 
+      <section id="soup-run">
+        <p class="kicker">Div soup in practice · what-iff · Claude Haiku 4.5</p>
+        <p class="task" style="font-size:13pt;margin:0 0 12px;">“My flight to Lisbon moved. Edit the memory that says the flight is at 9:40 so it says 10:15 instead, keeping the rest of the text the same. Do not change any other memory.”</p>
+        <div class="solo">
+          <div class="lane soup" data-run="soup">
+            <div class="head"><p>Claude Haiku 4.5 · Div soup</p><p class="clock">0.0s</p></div>
+            <video src="../head-to-head/soup.webm" muted playsinline preload="auto"></video>
+            <p class="verdict"></p>
+          </div>
+          <div class="lane soup"><div class="head"><p>Agent steps</p><p></p></div><div class="steps" data-run="soup"></div></div>
+        </div>
+        <div class="controls-row">
+          <button class="play">Play</button>
+          <button data-rate="1">1×</button><button data-rate="2">2×</button><button data-rate="4">4×</button>
+          <p>Recorded through Playwright MCP. Steps from the agent's transcript, timed to when it issued them. Graded from the app's database.</p>
+        </div>
+      </section>
+
       <section>
         <p class="kicker">Tier 2 · WCAG / Section 508</p>
         <h2>Every control has a name. Fourteen share it.</h2>
@@ -97,6 +121,29 @@
             <ul class="said"><li>“Memories, selected, tab, 1 of 3.”</li><li>“Memories, list, 14 items.”</li><li>“Select memory, checkbox, unchecked.”</li><li>“More actions, button.” ×14</li></ul>
             <p class="verdict-line ok">Passes the audit. But “More actions” for which memory? The agent finds out by position, and position is where it slips.</p>
           </div>
+        </div>
+      </section>
+
+      <section id="h2h-run">
+        <p class="kicker">Head to head · same task, same pixels</p>
+        <div class="h2h" style="height:540px;text-align:left;">
+          <div class="lane soup" data-run="soup">
+            <div class="head"><p>Claude Haiku 4.5 · Div soup</p><p class="clock">0.0s</p></div>
+            <video src="../head-to-head/soup.webm" muted playsinline preload="auto"></video>
+            <div class="steps" data-run="soup"></div>
+            <p class="verdict"></p>
+          </div>
+          <div class="lane wcag" data-run="wcag">
+            <div class="head"><p>Claude Opus 5.5 · WCAG</p><p class="clock">0.0s</p></div>
+            <video src="../head-to-head/wcag.webm" muted playsinline preload="auto"></video>
+            <div class="steps" data-run="wcag"></div>
+            <p class="verdict"></p>
+          </div>
+        </div>
+        <div class="controls-row">
+          <button class="play">Play both</button>
+          <button data-rate="1">1×</button><button data-rate="2">2×</button><button data-rate="4">4×</button>
+          <p>Different models on purpose: the small one on div soup, the large one on WCAG. Steps from each transcript; graded from the app's database.</p>
         </div>
       </section>
 
@@ -200,6 +247,40 @@
   <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
   <script>
     Reveal.initialize({ hash: true, width: 1280, height: 720, margin: 0.04, transition: 'fade', autoPlayMedia: true });
+    // Recorded runs: sync each step log to its video. The webm files can't seek, so Play reloads them.
+    (async () => {
+      const runs = {};
+      for (const k of ['soup', 'wcag']) runs[k] = await (await fetch(`../head-to-head/${k}.json`)).json();
+      const fmt = t => `${t.toFixed(1)}s`;
+      for (const section of document.querySelectorAll('#soup-run, #h2h-run')) {
+        const lanes = [...section.querySelectorAll('.lane[data-run]')].map(lane => {
+          const run = runs[lane.dataset.run], box = section.querySelector(`.steps[data-run="${lane.dataset.run}"]`);
+          box.innerHTML = run.steps.map(s => `<p class="${s.kind}"><span class="t">${fmt(s.t)}</span><span class="v">${s.verb}</span>${s.detail.replace(/</g, '&lt;')}</p>`).join('');
+          const v = lane.querySelector('.verdict');
+          v.textContent = run.verdict.text; v.classList.add(run.verdict.pass ? 'pass' : 'fail');
+          return { run, box, v, rows: [...box.children], video: lane.querySelector('video'), clock: lane.querySelector('.clock') };
+        });
+        let rate = 2;
+        (function tick() {
+          for (const { run, box, v, rows, video, clock } of lanes) {
+            // The recording drops frames under load, so map video time linearly onto the run's wall clock.
+            const now = video.currentTime * (video.duration ? run.end / video.duration : 1);
+            clock.textContent = `${fmt(now)} · ${run.toolCalls} tool calls`;
+            let last = -1;
+            run.steps.forEach((s, i) => { rows[i].classList.toggle('done', s.t <= now); rows[i].classList.remove('now'); if (s.t <= now) last = i; });
+            if (last >= 0) { rows[last].classList.add('now'); box.scrollTop = Math.max(0, rows[last].offsetTop - box.clientHeight + 60); }
+            v.classList.toggle('show', video.ended);
+          }
+          requestAnimationFrame(tick);
+        })();
+        const play = () => lanes.forEach(({ video }) => { video.defaultPlaybackRate = rate; video.load(); video.play(); });
+        const pause = () => lanes.forEach(({ video }) => video.pause());
+        section.querySelector('.play').onclick = play;
+        section.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => { rate = +b.dataset.rate; lanes.forEach(({ video }) => video.playbackRate = rate); });
+        Reveal.on('slidechanged', e => e.currentSlide === section ? play() : pause());
+        if (Reveal.getCurrentSlide() === section) play();
+      }
+    })();
   </script>
 </body>
 </html>
