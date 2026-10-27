@@ -23,6 +23,15 @@
     table.results th, table.results td { padding: 10px 26px; border-bottom: 1px solid var(--line-color); text-align: right; }
     table.results th:first-child, table.results td:first-child { text-align: left; color: var(--muted-color); }
     .note { font-size: 11pt; color: var(--muted-color); margin-top: 22px; }
+    table.results.tight { font-size: 15pt; } table.results.tight th, table.results.tight td { padding: 8px 20px; }
+    table.results td.bad { color: #E2604F; } table.results td.good { color: #5FD08A; } table.results td.ok { color: #F2C14E; }
+    .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; text-align: left; margin-top: 8px; }
+    .flow div { background: #171829; border: 1px solid var(--line-color); border-top: 3px solid var(--primary-color);
+      border-radius: var(--box-radius); padding: 14px 14px 16px; }
+    .flow b { display: block; font-size: 10pt; letter-spacing: .08em; color: var(--primary-color); margin-bottom: 6px; }
+    .flow h4 { font-size: 15pt; margin: 0 0 8px; color: var(--text-color); text-transform: none; }
+    .flow p { font-size: 11.5pt; line-height: 1.4; margin: 0; color: var(--muted-color); }
+    .flow div.grade { border-top-color: #5FD08A; } .flow div.grade b { color: #5FD08A; }
   </style>
 </head>
 <body>
@@ -114,15 +123,70 @@
       </section>
 
       <section>
-        <p class="kicker">684 graded agent runs · 4 apps · Opus, Sonnet, Haiku 4.5, Haiku 5.5</p>
-        <h2>What the agent does with it</h2>
-        <table class="results">
-          <tr><th></th><th>Div soup</th><th>WCAG</th><th>Patterns</th></tr>
-          <tr><td>Task completion</td><td>95.2%</td><td>96.5%</td><td>98.7%</td></tr>
-          <tr><td>False “done”</td><td>4</td><td>4</td><td>0</td></tr>
-          <tr><td>Extra tokens on div soup vs WCAG, Haiku 4.5</td><td>+114%</td><td>baseline</td><td></td></tr>
+        <p class="kicker">How the evals work</p>
+        <h2>Change only the semantics. Grade only the outcome.</h2>
+        <div class="flow">
+          <div><b>1 · PIN</b><h4>Real app</h4><p>what-iff, Headlamp, Open MCT and webmcp-demo, each pinned to one commit.</p></div>
+          <div><b>2 · PATCH</b><h4>Three tiers</h4><p>A semantics-only patch per tier. A pixel diff proves every tier renders identically.</p></div>
+          <div><b>3 · AUDIT</b><h4>axe</h4><p>WCAG 2.2 AA violations per tier: the score an existing eval would report.</p></div>
+          <div><b>4 · SEED</b><h4>Fresh state</h4><p>Fixtures reset every run, each with a look-alike decoy (staging, a sibling memory).</p></div>
+          <div><b>5 · RUN</b><h4>Agent</h4><p>Claude Code headless through Playwright MCP, in an empty sandbox, no user settings, $1 cap.</p></div>
+          <div class="grade"><b>6 · GRADE</b><h4>App state</h4><p>Read back from the API, kubectl or the database. A claim of "done" is checked, never trusted.</p></div>
+        </div>
+        <p class="note">Every task on 4 apps, at 3 tiers, with 4 models (Opus 5.5, Sonnet 5.5, Haiku 4.5, Haiku 5.5), 3 runs each: 684 graded runs. Tokens and cost come from each run's stream; costs are list prices.</p>
+      </section>
+
+      <section>
+        <p class="kicker">Outcome 1 · Existing evals barely notice</p>
+        <h2>axe sees the markup, not the missing meaning</h2>
+        <table class="results tight">
+          <tr><th>WCAG-tagged axe violations</th><th>Div soup</th><th>WCAG / 508</th><th>Patterns</th></tr>
+          <tr><td>what-iff</td><td class="bad">22</td><td>0</td><td>0</td></tr>
+          <tr><td>Headlamp</td><td class="ok">2</td><td>0</td><td>0</td></tr>
+          <tr><td>Open MCT</td><td class="bad">49</td><td>0</td><td>0</td></tr>
+          <tr><td>webmcp-demo</td><td class="bad">28</td><td>0</td><td>0</td></tr>
         </table>
-        <p class="note">Graded from app state (API, kubectl, CouchDB), not from the agent's own claim. github.com/unlikelyzero/agent-experience-mcpcon26</p>
+        <p class="note">A &lt;div&gt; with a click handler gives axe nothing to flag. Headlamp's div soup has 2 violations, yet every model spent 16–102% more tokens on it.</p>
+      </section>
+
+      <section>
+        <p class="kicker">Outcome 2 · Div soup costs more</p>
+        <h2>Extra tokens per successful task, div soup vs WCAG</h2>
+        <table class="results tight">
+          <tr><th>Model</th><th>what-iff</th><th>Headlamp</th><th>Open MCT</th><th>webmcp-demo</th></tr>
+          <tr><td>Claude Opus 5.5</td><td class="ok">+16%</td><td class="bad">+44%</td><td class="ok">+23%</td><td class="good">−12%</td></tr>
+          <tr><td>Claude Sonnet 5.5</td><td class="ok">+22%</td><td class="bad">+54%</td><td class="ok">+19%</td><td class="ok">+12%</td></tr>
+          <tr><td>Claude Haiku 4.5</td><td class="bad">+95%</td><td class="bad">+102%</td><td class="bad">+147%</td><td class="bad">+84%</td></tr>
+          <tr><td>Claude Haiku 5.5</td><td class="ok">+22%</td><td class="ok">+16%</td><td class="ok">+9%</td><td class="ok">+10%</td></tr>
+        </table>
+        <p class="note">On the three full apps div soup cost every model 9–147% more. The one exception is Opus on webmcp-demo, a single static page small enough to scrape.</p>
+      </section>
+
+      <section>
+        <p class="kicker">Outcome 3 · Completion and false "done"</p>
+        <h2>Agents finish more, and stop lying about it</h2>
+        <table class="results tight">
+          <tr><th>Tasks completed</th><th>Div soup</th><th>WCAG / 508</th><th>Patterns</th><th>Claimed done, but wasn't</th></tr>
+          <tr><td>what-iff</td><td class="bad">90%</td><td>98%</td><td class="good">100%</td><td>2, div soup</td></tr>
+          <tr><td>Headlamp</td><td>97%</td><td class="good">100%</td><td class="good">100%</td><td>2, div soup</td></tr>
+          <tr><td>Open MCT</td><td>93%</td><td class="bad">90%</td><td>95%</td><td>3, WCAG</td></tr>
+          <tr><td>webmcp-demo</td><td class="good">100%</td><td>98%</td><td class="good">100%</td><td>1, WCAG</td></tr>
+          <tr><td><b>All apps</b></td><td><b>95.2%</b></td><td><b>96.5%</b></td><td class="good"><b>98.7%</b></td><td><b>4 · 4 · 0</b></td></tr>
+        </table>
+        <p class="note">Open MCT's WCAG dip is a drag-to-reorder task. WCAG 2.5.7 requires a single-pointer alternative, axe can't test for it, and only the patterns tier added one.</p>
+      </section>
+
+      <section>
+        <p class="kicker">Outcome 4 · When the interface is a tool list</p>
+        <h2>A tool's description is its accessible name</h2>
+        <table class="results tight">
+          <tr><th>Claude Haiku 4.5 on what-iff</th><th>Pass</th><th>Tool calls</th><th>Tokens / success</th><th>Cost / success</th></tr>
+          <tr><td>Playwright MCP, div soup</td><td>9 / 12</td><td>34.7</td><td>2.14M</td><td>$0.37</td></tr>
+          <tr><td>Playwright MCP, WCAG</td><td>12 / 12</td><td>28.8</td><td>1.19M</td><td>$0.25</td></tr>
+          <tr><td>WebMCP, described tools</td><td class="good">36 / 36</td><td class="good">3.4</td><td class="good">41k</td><td class="good">$0.029</td></tr>
+          <tr><td>WebMCP, action_1…action_8</td><td class="bad">6 / 36</td><td>16.7</td><td class="bad">2.34M</td><td class="bad">$0.77</td></tr>
+        </table>
+        <p class="note">Undescribed tools were worse than div soup: in 19 of 30 failures the agent deleted the memory it was meant to change.</p>
       </section>
 
       <section class="section-divider" data-state="is-section-divider">
