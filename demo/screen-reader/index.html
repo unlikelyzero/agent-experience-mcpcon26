@@ -47,6 +47,10 @@
     .reveal .acttree p.hit { color: #fff; background: color-mix(in srgb, var(--lane) 35%, transparent); box-shadow: inset 3px 0 0 var(--lane); border-radius: 3px; }
     .solo .lane.side { grid-template-rows: auto 1fr auto !important; }
     #h2h-run .lane { grid-template-rows: auto 190px 1fr auto auto; } #h2h-run .lane video { height: 190px; } #h2h-run .acttree { max-height: 152px; }
+    .reveal pre.code { font-size: 11pt; }
+    .reveal .steps p.result { color: #6E7194; } .reveal .steps p.result.done { color: #9a9cb8; }
+    .reveal .steps p.result .v { color: #8E91B4; font-weight: 400; }
+    #webmcp-run .lane video { height: 250px; }
   </style>
 </head>
 <body>
@@ -222,6 +226,43 @@
         <p class="note">Undescribed tools were worse than div soup: in 19 of 30 failures the agent deleted the memory it was meant to change.</p>
       </section>
 
+      <section id="webmcp-code">
+        <p class="kicker">WebMCP · what the page registers</p>
+        <h2>Same function. One tool is described, one isn't.</h2>
+        <div class="pair" style="grid-template-columns: 1.25fr 1fr;">
+          <div><h3>Described</h3>
+<pre class="tree code"><span class="ln">navigator.modelContext.registerTool({</span><span class="ln">  name: <span class="good">'edit_memory'</span>,</span><span class="ln">  description: <span class="good">"Replace one memory's text."</span>,</span><span class="ln">  inputSchema: {</span><span class="ln">    type: 'object',</span><span class="ln">    properties: {</span><span class="ln">      memory_id: { type: 'string',</span><span class="ln">        description: <span class="good">'The memory id, from list_memories.'</span> },</span><span class="ln">      content: { type: 'string',</span><span class="ln">        description: <span class="good">'The full new text.'</span> },</span><span class="ln">    },</span><span class="ln">    required: ['memory_id', 'content'],</span><span class="ln">  },</span><span class="ln">  execute: a =&gt; patch(a.memory_id, { content: a.content }),</span><span class="ln">});</span></pre></div>
+          <div><h3>Undescribed</h3>
+<pre class="tree code"><span class="ln">navigator.modelContext.registerTool({</span><span class="ln">  name: <span class="bad">'action_6'</span>,</span><span class="ln">  inputSchema: {</span><span class="ln">    type: 'object',</span><span class="ln">    properties: { <span class="bad">p1: {}, p2: {}</span> },</span><span class="ln">  },</span><span class="ln">  execute: a =&gt; patch(a.p1, { content: a.p2 }),</span><span class="ln">});</span></pre>
+            <p class="verdict-line">Both call the same service the UI uses. The agent never reads the markup, so the tool's name, description and schema are its whole accessibility tree.</p>
+          </div>
+        </div>
+        <p class="note">Condensed from core/services/webmcp.service.ts in the what-iff fork: <code>?webmcp=1</code> registers eight described tools, <code>?webmcp=soup</code> the same eight as action_1…action_8.</p>
+      </section>
+
+      <section id="webmcp-run">
+        <p class="kicker">WebMCP · Claude Haiku 4.5 · same task, same page, no browser tools</p>
+        <div class="h2h" style="height:540px;text-align:left;">
+          <div class="lane wcag" data-run="webmcp-good">
+            <div class="head"><p>Described tools</p><p class="clock">0.0s</p></div>
+            <video src="../head-to-head/webmcp-good.webm" muted playsinline preload="auto"></video>
+            <div class="steps" data-run="webmcp-good"></div>
+            <p class="verdict"></p>
+          </div>
+          <div class="lane soup" data-run="webmcp-soup">
+            <div class="head"><p>action_1 … action_8</p><p class="clock">0.0s</p></div>
+            <video src="../head-to-head/webmcp-soup.webm" muted playsinline preload="auto"></video>
+            <div class="steps" data-run="webmcp-soup"></div>
+            <p class="verdict"></p>
+          </div>
+        </div>
+        <div class="controls-row">
+          <button class="play">Play both</button>
+          <button data-rate="1">1×</button><button data-rate="2">2×</button><button data-rate="4">4×</button>
+          <p>The panel in each video lists the tool calls; the page reloads after each one to show its effect. Graded from the app's database.</p>
+        </div>
+      </section>
+
       <section class="section-divider" data-state="is-section-divider">
         <h1>If a screen reader can't<br>tell what it does,<br>neither can your agent.</h1>
         <p class="text-xl text-muted">Accessibility is your agent's interface.</p>
@@ -253,9 +294,10 @@
     // Recorded runs: sync each step log to its video. The webm files can't seek, so Play reloads them.
     (async () => {
       const runs = {};
-      for (const k of ['soup', 'wcag']) runs[k] = await (await fetch(`../head-to-head/${k}.json`, { cache: 'no-cache' })).json();
+      for (const k of new Set([...document.querySelectorAll('.lane[data-run]')].map(l => l.dataset.run)))
+        runs[k] = await (await fetch(`../head-to-head/${k}.json`, { cache: 'no-cache' })).json();
       const fmt = t => `${t.toFixed(1)}s`;
-      for (const section of document.querySelectorAll('#soup-run, #h2h-run')) {
+      for (const section of document.querySelectorAll('#soup-run, #h2h-run, #webmcp-run')) {
         const lanes = [...section.querySelectorAll('.lane[data-run]')].map(lane => {
           const run = runs[lane.dataset.run], box = section.querySelector(`.steps[data-run="${lane.dataset.run}"]`);
           box.innerHTML = run.steps.map(s => `<p class="${s.kind}"><span class="t">${fmt(s.t)}</span><span class="v">${s.verb}</span>${s.detail.replace(/</g, '&lt;')}</p>`).join('');

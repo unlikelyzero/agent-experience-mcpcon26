@@ -9,6 +9,12 @@ const [dir, out] = process.argv.slice(2);
 const lines = readFileSync(join(dir, 'transcript.jsonl'), 'utf8').split('\n').filter(Boolean);
 const times = JSON.parse(readFileSync(join(dir, 'line-times.json'), 'utf8'));
 const grade = JSON.parse(readFileSync(join(dir, 'grade.json'), 'utf8'));
+// The seeded login appears in tool arguments; the step log shows placeholders instead.
+const prompt = readFileSync(join(dir, 'prompt.txt'), 'utf8');
+const secrets = [[/username "([^"]+)"/, '‹username›'], [/password "([^"]+)"/, '‹password›']]
+  .map(([re, label]) => [prompt.match(re)?.[1], label]).filter(([v]) => v);
+// Memory ids are UUIDs; their first block is enough to tell them apart on a slide.
+const redact = text => secrets.reduce((t, [v, label]) => t.split(v).join(label), text).replace(/\b([0-9a-f]{8})-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/g, '$1…');
 
 const clip = (s, n = 90) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 // ref -> 'role "name"' from the accessibility snapshots the agent has read so far.
@@ -57,17 +63,32 @@ function describe(name, input) {
 }
 
 const steps = [];
+const webmcpIds = new Set();
 let t0 = null;
 lines.forEach((line, i) => {
   const e = JSON.parse(line);
   if (e.type === 'user') {
-    for (const c of e.message?.content ?? []) for (const part of [].concat(c.content ?? [])) if (typeof part?.text === 'string') learnRefs(part.text);
+    for (const c of e.message?.content ?? []) {
+      for (const part of [].concat(c.content ?? [])) if (typeof part?.text === 'string') learnRefs(part.text);
+      // WebMCP results are short and are the whole story, so they join the log.
+      if (c.type === 'tool_result' && webmcpIds.has(c.tool_use_id)) {
+        const text = [].concat(c.content ?? []).map(x => (typeof x === 'string' ? x : x.text ?? '')).join('');
+        const error = c.is_error || /^(page\.evaluate: )?Error\b/.test(text);
+        steps.push({ t: (times[i] ?? 0) / 1000, kind: error ? 'warn' : 'result', verb: error ? 'error' : 'returns',
+          detail: clip(redact(text.replace(/^page\.evaluate: /, '').replace(/\s+at .*$/s, '').replace(/\s+/g, ' ')), 110) });
+      }
+    }
     return;
   }
   if (e.type !== 'assistant') return;
   const t = (times[i] ?? 0) / 1000;
   for (const c of e.message.content ?? []) {
-    if (c.type === 'tool_use' && c.name.startsWith('mcp__playwright__browser_')) {
+    if (c.type === 'tool_use' && c.name.startsWith('mcp__webmcp__')) {
+      // The WebMCP server opens the page when the session starts, so the video starts with the run.
+      if (t0 === null) t0 = (times[0] ?? 0) / 1000;
+      webmcpIds.add(c.id);
+      steps.push({ t, kind: 'tool', verb: c.name.replace('mcp__webmcp__', ''), detail: clip(redact(JSON.stringify(c.input ?? {})), 110) });
+    } else if (c.type === 'tool_use' && c.name.startsWith('mcp__playwright__browser_')) {
       if (t0 === null) t0 = t;
       const [verb, detail] = describe(c.name, c.input ?? {});
       const ref = refOf(c.input ?? {});
@@ -86,6 +107,6 @@ const end = (times.at(-1) ?? 0) / 1000;
 for (const s of steps) s.t = Math.max(0, +(s.t - (t0 ?? 0)).toFixed(2));
 const verdict = grade.pass
   ? { pass: true, text: 'Passed. Checked against the app\'s data, not the agent\'s word.' }
-  : { pass: false, text: `Failed. ${grade.reasons.map(r => r.replace(/^"(.+)": starred changed \(false -> true\)$/, 'It also starred an unrelated memory, “$1”.')).join(' ')}${grade.claimed ? ' It still reported the task complete.' : ''}` };
+  : { pass: false, text: `Failed. ${grade.reasons.map(r => r.replace(/^"(.+)": starred changed \(false -> true\)$/, 'It also starred an unrelated memory, “$1”.').replace(/^target was deleted$/, 'It deleted the memory it was meant to edit.').replace(/^target still says (.+)$/, 'The memory still says $1.').replace(/^target does not say .+$/, '')).filter(Boolean).join(' ')}${grade.claimed ? ' It still reported the task complete.' : ''}` };
 writeFileSync(out, JSON.stringify({ steps, verdict, end: +(end - (t0 ?? 0)).toFixed(2), toolCalls: grade.metrics.toolCalls, tokens: grade.metrics.inputTokens + grade.metrics.outputTokens + grade.metrics.cacheReadTokens + grade.metrics.cacheCreationTokens }, null, 1));
 console.log(`${steps.length} steps, ${end - t0 | 0}s, pass=${grade.pass}`);

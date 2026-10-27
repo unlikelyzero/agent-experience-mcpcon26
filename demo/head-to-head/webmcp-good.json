@@ -1,0 +1,71 @@
+{
+ "steps": [
+  {
+   "t": 3.35,
+   "kind": "say",
+   "verb": "says",
+   "detail": "I'll help you edit the flight time in your memory. Let me sign in first, then find and edit the memory about your Lisbon flight."
+  },
+  {
+   "t": 3.69,
+   "kind": "tool",
+   "verb": "sign_in",
+   "detail": "{\"username\":\"‹username›\",\"password\":\"‹password›\"}"
+  },
+  {
+   "t": 5.39,
+   "kind": "result",
+   "verb": "returns",
+   "detail": "signed in"
+  },
+  {
+   "t": 7.19,
+   "kind": "say",
+   "verb": "says",
+   "detail": "Now let me find the memory about your Lisbon flight:"
+  },
+  {
+   "t": 7.34,
+   "kind": "tool",
+   "verb": "list_memories",
+   "detail": "{\"query\":\"flight\"}"
+  },
+  {
+   "t": 8.82,
+   "kind": "result",
+   "verb": "returns",
+   "detail": "[{\"id\":\"79b38227…\",\"content\":\"Prefers aisle seats on flights\",\"scope\":\"personality\",\"thread\":null,\"starred\":f…"
+  },
+  {
+   "t": 11.54,
+   "kind": "say",
+   "verb": "says",
+   "detail": "Perfect! I found the memory about your Lisbon flight. It currently says \"Flight to Lisbon is at 9:40 on Friday\". Let me update it to 10:15:"
+  },
+  {
+   "t": 11.92,
+   "kind": "tool",
+   "verb": "edit_memory",
+   "detail": "{\"memory_id\":\"7be77e0c…\",\"content\":\"Flight to Lisbon is at 10:15 on Friday\"}"
+  },
+  {
+   "t": 14.69,
+   "kind": "result",
+   "verb": "returns",
+   "detail": "{\"id\":\"7be77e0c…\",\"content\":\"Flight to Lisbon is"
+  },
+  {
+   "t": 16.41,
+   "kind": "say",
+   "verb": "says",
+   "detail": "Done! I've successfully updated your Lisbon flight memory from 9:40 to 10:15. The memory now reads \"Flight to Lisbon is at 10:15 on Friday\" and no other memori…"
+  }
+ ],
+ "verdict": {
+  "pass": true,
+  "text": "Passed. Checked against the app's data, not the agent's word."
+ },
+ "end": 17.68,
+ "toolCalls": 3,
+ "tokens": 37976
+}
