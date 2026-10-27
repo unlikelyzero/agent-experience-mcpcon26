@@ -38,6 +38,9 @@
     .solo .lane video { height: 100%; min-height: 0; }
     .reveal .solo .steps p { white-space: normal; font-size: 10pt; }
     .reveal .verdict { display: none; } .reveal .verdict.show { display: block; }
+    .tree .ln { display: block; padding: 0 6px; margin: 0 -6px; border-radius: 4px; transition: background .15s, color .15s; }
+    .tree .ln.live { background: rgba(0,172,214,.28); color: #fff; box-shadow: inset 3px 0 0 var(--primary-color); }
+    .reveal ul.said li { transition: color .15s; } .reveal ul.said li.live { color: var(--primary-color); }
   </style>
 </head>
 <body>
@@ -66,18 +69,10 @@
         <h2>It says words. It never says what you can do.</h2>
         <div class="pair">
           <div><h3>What the agent got</h3>
-<pre class="tree">- heading [level=1]: Memory Manager
-- generic [cursor=pointer]: <span class="bad">Memories</span>
-- generic [cursor=pointer]: <span class="bad">Merge history</span>
-- generic [cursor=pointer]: User
-- article [cursor=pointer]:
-  - generic: Trip Planner
-  - generic: Oct 21
-  - generic: <span class="bad">⋮</span>
-  - paragraph: Prefers aisle seats on flights</pre></div>
+<pre class="tree"><span class="ln" data-cue="h1">- heading [level=1]: Memory Manager</span><span class="ln" data-cue="tab1">- generic [cursor=pointer]: <span class="bad">Memories</span></span><span class="ln" data-cue="tab2">- generic [cursor=pointer]: <span class="bad">Merge history</span></span><span class="ln" data-cue="tab3">- generic [cursor=pointer]: <span class="bad">Compaction log</span></span><span class="ln" data-cue="user">- generic [cursor=pointer]: User</span><span class="ln" data-cue="thread">- generic [cursor=pointer]: Thread</span><span class="ln">- article [cursor=pointer]:</span><span class="ln" data-cue="tp">  - generic: Trip Planner</span><span class="ln" data-cue="tp">  - generic: Personality</span><span class="ln" data-cue="date">  - generic: Oct 21</span><span class="ln" data-cue="menu">  - generic: <span class="bad">⋮</span></span><span class="ln" data-cue="text">  - paragraph: Prefers aisle seats on flights</span><span class="ln" data-cue="conf">  - generic: 60% · Medium confidence</span></pre></div>
           <div><h3>What a screen reader says</h3>
-            <audio controls data-autoplay src="audio/soup.wav"></audio>
-            <ul class="said"><li>“Memories. Merge history. Compaction log.”</li><li>“Trip Planner. Personality. October 21.”</li><li>“Vertical ellipsis.”</li><li>“Prefers aisle seats on flights.”</li></ul>
+            <audio controls data-autoplay data-tier="soup" src="audio/soup.wav"></audio>
+            <ul class="said"><li data-cue="tab1 tab2 tab3">“Memories. Merge history. Compaction log.”</li><li data-cue="user thread">“User. Thread.”</li><li data-cue="tp date">“Trip Planner. Personality. October 21.”</li><li data-cue="menu">“Vertical ellipsis.”</li><li data-cue="text conf">“Prefers aisle seats on flights.”</li></ul>
             <p class="verdict-line">No tab, no checkbox, no button. None of the 14 memory cards has a control in the tree. The agent has to guess what is clickable.</p>
           </div>
         </div>
@@ -106,19 +101,10 @@
         <h2>Every control has a name. Fourteen share it.</h2>
         <div class="pair">
           <div><h3>What the agent got</h3>
-<pre class="tree">- tablist "Memory manager sections":
-  - tab "Memories" <span class="good">[selected]</span>
-- list "Memories":
-  - listitem:
-    - checkbox <span class="ok">"Select memory"</span>
-    - button <span class="ok">"More actions"</span>
-    - paragraph: Prefers aisle seats on flights
-  - listitem:
-    - checkbox <span class="ok">"Select memory"</span>
-    - button <span class="ok">"More actions"</span></pre></div>
+<pre class="tree"><span class="ln" data-cue="h1">- heading [level=1]: Memory Manager</span><span class="ln" data-cue="tabs">- tablist "Memory manager sections":</span><span class="ln" data-cue="tab1">  - tab "Memories" <span class="good">[selected]</span></span><span class="ln" data-cue="list">- list "Memories":</span><span class="ln">  - listitem:</span><span class="ln" data-cue="cb1">    - checkbox <span class="ok">"Select memory"</span></span><span class="ln" data-cue="btn1">    - button <span class="ok">"More actions"</span></span><span class="ln">    - paragraph: Reads mostly science fiction</span><span class="ln">  - listitem:</span><span class="ln" data-cue="cb2">    - checkbox <span class="ok">"Select memory"</span></span><span class="ln" data-cue="btn2">    - button <span class="ok">"More actions"</span></span><span class="ln">    - paragraph: Coffee order is a flat white</span><span class="ln">  - listitem:</span><span class="ln" data-cue="cb3">    - checkbox <span class="ok">"Select memory"</span></span><span class="ln" data-cue="btn3">    - button <span class="ok">"More actions"</span></span><span class="ln">    - paragraph: Allergic to cats</span></pre></div>
           <div><h3>What a screen reader says</h3>
-            <audio controls data-autoplay src="audio/wcag.wav"></audio>
-            <ul class="said"><li>“Memories, selected, tab, 1 of 3.”</li><li>“Memories, list, 14 items.”</li><li>“Select memory, checkbox, unchecked.”</li><li>“More actions, button.” ×14</li></ul>
+            <audio controls data-autoplay data-tier="wcag" src="audio/wcag.wav"></audio>
+            <ul class="said"><li data-cue="tabs tab1">“Memories, selected, tab, 1 of 3.”</li><li data-cue="list">“Memories, list, 14 items.”</li><li data-cue="cb1 cb2 cb3">“Select memory, checkbox, unchecked.”</li><li data-cue="btn1 btn2 btn3">“More actions, button.” ×14</li></ul>
             <p class="verdict-line ok">Passes the audit. But “More actions” for which memory? The agent finds out by position, and position is where it slips.</p>
           </div>
         </div>
@@ -152,18 +138,10 @@
         <h2>The name tells you the target.</h2>
         <div class="pair">
           <div><h3>What the agent got</h3>
-<pre class="tree">- tablist "Memory manager sections":
-  - tab "Memories" [selected]
-- list "Memories":
-  - listitem <span class="good">"Prefers aisle seats on flights,
-             Trip Planner, active"</span>:
-    - checkbox <span class="good">"Select memory: Prefers aisle
-               seats on flights"</span>
-    - button <span class="good">"More actions for: Prefers
-             aisle seats on flights"</span></pre></div>
+<pre class="tree"><span class="ln" data-cue="h1">- heading [level=1]: Memory Manager</span><span class="ln" data-cue="tabs">- tablist "Memory manager sections":</span><span class="ln" data-cue="tab1">  - tab "Memories" [selected]</span><span class="ln" data-cue="list">- list "Memories":</span><span class="ln" data-cue="item">  - listitem <span class="good">"Prefers aisle seats on flights,</span></span><span class="ln" data-cue="item">             <span class="good">Trip Planner, active"</span>:</span><span class="ln" data-cue="cb">    - checkbox <span class="good">"Select memory: Prefers aisle</span></span><span class="ln" data-cue="cb">               <span class="good">seats on flights"</span></span><span class="ln" data-cue="btn">    - button <span class="good">"More actions for: Prefers</span></span><span class="ln" data-cue="btn">             <span class="good">aisle seats on flights"</span></span><span class="ln">    - paragraph: Prefers aisle seats on flights</span></pre></div>
           <div><h3>What a screen reader says</h3>
-            <audio controls data-autoplay src="audio/patterns.wav"></audio>
-            <ul class="said"><li>“Prefers aisle seats on flights, Trip Planner, active.”</li><li>“Select memory: Prefers aisle seats on flights, checkbox.”</li><li>“More actions for: Prefers aisle seats on flights, button.”</li></ul>
+            <audio controls data-autoplay data-tier="patterns" src="audio/patterns.wav"></audio>
+            <ul class="said"><li data-cue="tabs tab1">“Memories, selected, tab, 1 of 3.”</li><li data-cue="list">“Memories, list, 14 items.”</li><li data-cue="item">“Prefers aisle seats on flights, Trip Planner, active.”</li><li data-cue="cb">“Select memory: Prefers aisle seats on flights, checkbox.”</li><li data-cue="btn">“More actions for: Prefers aisle seats on flights, button.”</li></ul>
             <p class="verdict-line good">Each control carries the row it acts on. Nothing to infer from layout.</p>
           </div>
         </div>
@@ -247,6 +225,23 @@
   <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
   <script>
     Reveal.initialize({ hash: true, width: 1280, height: 720, margin: 0.04, transition: 'fade', autoPlayMedia: true });
+    // Screen-reader slides: light up the tree line and transcript line being spoken.
+    (async () => {
+      const cues = await (await fetch('audio/cues.json', { cache: 'no-cache' })).json();
+      for (const audio of document.querySelectorAll('audio[data-tier]')) {
+        const section = audio.closest('section'), list = cues[audio.dataset.tier];
+        let shown = null;
+        (function tick() {
+          const t = audio.currentTime, c = audio.paused && t === 0 ? null : list.find(c => t >= c.t && t < c.end + 0.25);
+          const cue = c ? c.cue : null;
+          if (cue !== shown) {
+            section.querySelectorAll('[data-cue]').forEach(el => el.classList.toggle('live', !!cue && el.dataset.cue.split(' ').includes(cue)));
+            shown = cue;
+          }
+          requestAnimationFrame(tick);
+        })();
+      }
+    })();
     // Recorded runs: sync each step log to its video. The webm files can't seek, so Play reloads them.
     (async () => {
       const runs = {};
