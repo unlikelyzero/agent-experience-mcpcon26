@@ -51,6 +51,16 @@
     .reveal .steps p.result { color: #6E7194; } .reveal .steps p.result.done { color: #9a9cb8; }
     .reveal .steps p.result .v { color: #8E91B4; font-weight: 400; }
     #webmcp-run .lane video { height: 250px; }
+    .tdiff { font: 9pt/1.27 "IBM Plex Mono", monospace; border: 1px solid var(--line-color); border-radius: var(--box-radius); overflow: hidden; text-align: left; }
+    .tdiff .thead, .tdiff .row { display: grid; grid-template-columns: 1fr 1fr; }
+    .tdiff .thead span { padding: 5px 12px; font-family: var(--body-font); font-weight: 700; font-size: 11pt; background: #2A2D47; }
+    .tdiff .thead span:first-child { color: #E2604F; } .tdiff .thead span:last-child { color: #00ACD6; }
+    .tdiff .row span { padding: 0 12px; white-space: pre; overflow: hidden; text-overflow: ellipsis; color: #8E91B4; }
+    .tdiff .row span:first-child { border-right: 1px solid var(--line-color); }
+    .tdiff .row.chg span:first-child { background: rgba(226,96,79,.16); color: #FFB4A9; }
+    .tdiff .row.chg span:last-child, .tdiff .row.add span:last-child { background: rgba(95,208,138,.14); color: #B8F0CC; }
+    .tdiff .row.more span { color: #55587A; font-style: italic; background: #1B1C30; font-size: 7pt; line-height: 1.15; }
+    .reveal #tree-diff p.note { font-size: 10.5pt; line-height: 1.35; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -72,6 +82,13 @@
           <div><h3>Accessibility patterns</h3><p class="text-lg">ARIA Authoring Practices plus names that say which row a control acts on.</p></div>
         </div>
         <p class="note">Audio on the next slides is macOS speech reading the accessibility tree that Playwright MCP returned to the agent in each tier, phrased the way VoiceOver announces it.</p>
+      </section>
+
+      <section id="tree-diff">
+        <p class="kicker">what-iff · Memory Manager · same pixels, two trees</p>
+        <h2 style="font-size:22pt;margin-bottom:8px;">Div soup vs WCAG: what the agent's snapshot loses</h2>
+        <div class="tdiff"><div class="thead"><span>Div soup</span><span>WCAG / Section 508</span></div><div class="row more"><span>⋯ 4 identical lines</span><span>⋯ 4 identical lines</span></div><div class="row chg"><span>- generic:</span><span>- tablist &quot;Memory manager sections&quot;:</span></div><div class="row chg"><span>  - generic: Memories</span><span>  - tab &quot;Memories&quot; [selected]</span></div><div class="row chg"><span>  - generic: Merge history</span><span>  - tab &quot;Merge history&quot;</span></div><div class="row chg"><span>  - generic: Compaction log</span><span>  - tab &quot;Compaction log&quot;</span></div><div class="row more"><span>⋯ 3 identical lines</span><span>⋯ 3 identical lines</span></div><div class="row chg"><span>    - searchbox &quot;Search memories…&quot;</span><span>    - searchbox &quot;Search memories&quot;</span></div><div class="row chg"><span>    - generic: ↻</span><span>    - button &quot;Refresh memories&quot;: ↻</span></div><div class="row chg"><span>  - generic:</span><span>  - generic &quot;Memory filters&quot;:</span></div><div class="row more"><span>⋯ 2 identical lines</span><span>⋯ 2 identical lines</span></div><div class="row chg"><span>      - combobox:</span><span>      - combobox &quot;Personality&quot;:</span></div><div class="row more"><span>⋯ 8 identical lines</span><span>⋯ 8 identical lines</span></div><div class="row chg"><span>        - textbox</span><span>        - textbox &quot;From Open start date calendar&quot;</span></div><div class="row chg"><span>        - button</span><span>        - button &quot;Open start date calendar&quot;</span></div><div class="row more"><span>⋯ 3 identical lines</span><span>⋯ 3 identical lines</span></div><div class="row chg"><span>        - textbox</span><span>        - textbox &quot;To Open end date calendar&quot;</span></div><div class="row chg"><span>        - button</span><span>        - button &quot;Open end date calendar&quot;</span></div><div class="row more"><span>⋯ 2 identical lines</span><span>⋯ 2 identical lines</span></div><div class="row chg"><span>      - combobox:</span><span>      - combobox &quot;Sort&quot;:</span></div><div class="row more"><span>⋯ 5 identical lines</span><span>⋯ 5 identical lines</span></div><div class="row chg"><span>      - combobox:</span><span>      - combobox &quot;Filter by source&quot;:</span></div><div class="row more"><span>⋯ 4 identical lines</span><span>⋯ 4 identical lines</span></div><div class="row chg"><span>  - generic:</span><span>  - tablist &quot;Memory status&quot;:</span></div><div class="row chg"><span>    - generic: User</span><span>    - tab &quot;User&quot; [selected]</span></div><div class="row chg"><span>    - generic: Thread</span><span>    - tab &quot;Thread&quot;</span></div><div class="row chg"><span>    - generic: Summaries</span><span>    - tab &quot;Summaries&quot;</span></div><div class="row chg"><span>    - generic: Archived</span><span>    - tab &quot;Archived&quot;</span></div><div class="row chg"><span>  - generic:</span><span>  - list &quot;Memories&quot;:</span></div><div class="row chg"><span>    - article:</span><span>    - listitem:</span></div><div class="row add"><span>&nbsp;</span><span>      - checkbox &quot;Select memory&quot;</span></div><div class="row more"><span>⋯ 7 identical lines</span><span>⋯ 7 identical lines</span></div><div class="row chg"><span>            - generic: ⋮</span><span>            - button &quot;More actions&quot;: ⋮</span></div><div class="row more"><span>⋯ 2 identical lines</span><span>⋯ 2 identical lines</span></div></div>
+        <p class="note">Playwright MCP snapshots from run T2-r1 of each tier, refs stripped, page heading through the first memory card. 23 of 63 lines differ, every one a role, name or state; the visible text is identical.</p>
       </section>
 
       <section>
