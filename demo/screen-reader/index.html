@@ -61,6 +61,10 @@
     .tdiff .row.chg span:last-child, .tdiff .row.add span:last-child { background: rgba(95,208,138,.14); color: #B8F0CC; }
     .tdiff .row.more span { color: #55587A; font-style: italic; background: #1B1C30; font-size: 7pt; line-height: 1.15; }
     .reveal #tree-diff p.note { font-size: 10.5pt; line-height: 1.35; margin-top: 8px; }
+    .app { position: relative; border: 1px solid var(--line-color); border-radius: 6px; overflow: hidden; line-height: 0; margin-bottom: 8px; }
+    .app img { width: 100%; margin: 0; }
+    .app i { position: absolute; border: 2px solid var(--primary-color); border-radius: 4px; background: rgba(0,172,214,.18); opacity: 0; transition: opacity .15s; }
+    .app i.live { opacity: 1; }
   </style>
 </head>
 <body>
@@ -95,7 +99,7 @@
         <p class="kicker">Tier 1 · Div soup</p>
         <h2>It says words. It never says what you can do.</h2>
         <div class="pair">
-          <div><h3>What the agent got</h3>
+          <div><h3>What the agent got</h3><div class="app"><img src="soup-app-top.png" alt="The div-soup Memory Manager: heading and section tabs"><img src="soup-app-cards.png" alt="The User and Thread filters and the Trip Planner memory card"><i data-cue="h1" style="left:1.8%;top:5.9%;width:21.2%;height:10.6%"></i><i data-cue="tab1" style="left:1.8%;top:25.7%;width:8.0%;height:16.2%"></i><i data-cue="tab2" style="left:10.2%;top:25.7%;width:10.5%;height:16.2%"></i><i data-cue="tab3" style="left:21.1%;top:25.7%;width:11.8%;height:16.2%"></i><i data-cue="user" style="left:2.3%;top:52.0%;width:6.8%;height:11.9%"></i><i data-cue="thread" style="left:8.2%;top:52.0%;width:8.4%;height:11.9%"></i><i data-cue="tp" style="left:10.8%;top:70.6%;width:18.6%;height:8.1%"></i><i data-cue="date" style="left:88.8%;top:71.4%;width:4.8%;height:7.6%"></i><i data-cue="menu" style="left:92.9%;top:70.5%;width:3.7%;height:9.4%"></i><i data-cue="text" style="left:10.8%;top:79.5%;width:31.8%;height:8.3%"></i><i data-cue="conf" style="left:10.8%;top:87.3%;width:14.7%;height:7.6%"></i></div>
 <pre class="tree"><span class="ln" data-cue="h1">- heading [level=1]: Memory Manager</span><span class="ln" data-cue="tab1">- generic [cursor=pointer]: <span class="bad">Memories</span></span><span class="ln" data-cue="tab2">- generic [cursor=pointer]: <span class="bad">Merge history</span></span><span class="ln" data-cue="tab3">- generic [cursor=pointer]: <span class="bad">Compaction log</span></span><span class="ln" data-cue="user">- generic [cursor=pointer]: User</span><span class="ln" data-cue="thread">- generic [cursor=pointer]: Thread</span><span class="ln">- article [cursor=pointer]:</span><span class="ln" data-cue="tp">  - generic: Trip Planner</span><span class="ln" data-cue="tp">  - generic: Personality</span><span class="ln" data-cue="date">  - generic: Oct 21</span><span class="ln" data-cue="menu">  - generic: <span class="bad">⋮</span></span><span class="ln" data-cue="text">  - paragraph: Prefers aisle seats on flights</span><span class="ln" data-cue="conf">  - generic: 60% · Medium confidence</span></pre></div>
           <div><h3>What a screen reader says</h3>
             <audio controls data-autoplay data-tier="soup" src="audio/soup.wav"></audio>
