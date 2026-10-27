@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listen to what your agent reads</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="../head-to-head/styles.css">
+  <style>
+    .reveal h2 { font-size: 30pt; margin: 0 0 18px; }
+    .pair { display: grid; grid-template-columns: 1.1fr 1fr; gap: 36px; text-align: left; }
+    .pair h3 { font-size: 13pt; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-color); margin: 0 0 10px; }
+    .reveal pre.tree { margin: 0; font: 11.5pt/1.45 "IBM Plex Mono", monospace; background: #171829; border: 1px solid var(--line-color);
+      border-radius: var(--box-radius); padding: 16px 18px; white-space: pre; box-shadow: none; width: 100%; color: #D7DAF0; }
+    .tree .bad { color: #E2604F; } .tree .ok { color: #F2C14E; } .tree .good { color: #5FD08A; }
+    .reveal ul.said { margin: 14px 0 0; padding: 0; list-style: none !important; font-size: 15pt; line-height: 1.5; }
+    .reveal ul.said li { margin: 0 0 4px; list-style: none; } .reveal ul.said li::before { content: none; }
+    .reveal audio { width: 100%; }
+    .verdict-line { margin-top: 18px; font-size: 15pt; border-left: 4px solid var(--secondary-color); padding-left: 14px; }
+    .verdict-line.good { border-color: #5FD08A; } .verdict-line.ok { border-color: #F2C14E; }
+    table.results { margin: 0 auto; font-size: 17pt; border-collapse: collapse; }
+    table.results th, table.results td { padding: 10px 26px; border-bottom: 1px solid var(--line-color); text-align: right; }
+    table.results th:first-child, table.results td:first-child { text-align: left; color: var(--muted-color); }
+    .note { font-size: 11pt; color: var(--muted-color); margin-top: 22px; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <section class="section-divider" data-state="is-section-divider">
+        <p class="kicker">AGNTCon + MCPCon North America 2026 · Agent Experience (AX)</p>
+        <h1>Listen to what<br>your agent reads.</h1>
+        <p class="text-xl text-muted">A screen reader and a browser agent read the same accessibility tree. Same pixels, three trees.</p>
+      </section>
+
+      <section>
+        <p class="kicker">what-iff · Memory Manager</p>
+        <h2>One page, three tiers, identical pixels</h2>
+        <div class="pair" style="grid-template-columns: 1fr 1fr 1fr; gap: 28px;">
+          <div><h3>Div soup</h3><p class="text-lg">Clickable divs and spans. No roles, no names, no states. It looks finished.</p></div>
+          <div><h3>WCAG / Section 508</h3><p class="text-lg">axe clean on WCAG 2.2 AA. Real tabs, checkboxes and buttons, with names that pass an audit.</p></div>
+          <div><h3>Accessibility patterns</h3><p class="text-lg">ARIA Authoring Practices plus names that say which row a control acts on.</p></div>
+        </div>
+        <p class="note">Audio on the next slides is macOS speech reading the accessibility tree that Playwright MCP returned to the agent in each tier, phrased the way VoiceOver announces it.</p>
+      </section>
+
+      <section>
+        <p class="kicker">Tier 1 · Div soup</p>
+        <h2>It says words. It never says what you can do.</h2>
+        <div class="pair">
+          <div><h3>What the agent got</h3>
+<pre class="tree">- heading [level=1]: Memory Manager
+- generic [cursor=pointer]: <span class="bad">Memories</span>
+- generic [cursor=pointer]: <span class="bad">Merge history</span>
+- generic [cursor=pointer]: User
+- article [cursor=pointer]:
+  - generic: Trip Planner
+  - generic: Oct 21
+  - generic: <span class="bad">⋮</span>
+  - paragraph: Prefers aisle seats on flights</pre></div>
+          <div><h3>What a screen reader says</h3>
+            <audio controls data-autoplay src="audio/soup.wav"></audio>
+            <ul class="said"><li>“Memories. Merge history. Compaction log.”</li><li>“Trip Planner. Personality. October 21.”</li><li>“Vertical ellipsis.”</li><li>“Prefers aisle seats on flights.”</li></ul>
+            <p class="verdict-line">No tab, no checkbox, no button. None of the 14 memory cards has a control in the tree. The agent has to guess what is clickable.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="kicker">Tier 2 · WCAG / Section 508</p>
+        <h2>Every control has a name. Fourteen share it.</h2>
+        <div class="pair">
+          <div><h3>What the agent got</h3>
+<pre class="tree">- tablist "Memory manager sections":
+  - tab "Memories" <span class="good">[selected]</span>
+- list "Memories":
+  - listitem:
+    - checkbox <span class="ok">"Select memory"</span>
+    - button <span class="ok">"More actions"</span>
+    - paragraph: Prefers aisle seats on flights
+  - listitem:
+    - checkbox <span class="ok">"Select memory"</span>
+    - button <span class="ok">"More actions"</span></pre></div>
+          <div><h3>What a screen reader says</h3>
+            <audio controls data-autoplay src="audio/wcag.wav"></audio>
+            <ul class="said"><li>“Memories, selected, tab, 1 of 3.”</li><li>“Memories, list, 14 items.”</li><li>“Select memory, checkbox, unchecked.”</li><li>“More actions, button.” ×14</li></ul>
+            <p class="verdict-line ok">Passes the audit. But “More actions” for which memory? The agent finds out by position, and position is where it slips.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="kicker">Tier 3 · Accessibility patterns</p>
+        <h2>The name tells you the target.</h2>
+        <div class="pair">
+          <div><h3>What the agent got</h3>
+<pre class="tree">- tablist "Memory manager sections":
+  - tab "Memories" [selected]
+- list "Memories":
+  - listitem <span class="good">"Prefers aisle seats on flights,
+             Trip Planner, active"</span>:
+    - checkbox <span class="good">"Select memory: Prefers aisle
+               seats on flights"</span>
+    - button <span class="good">"More actions for: Prefers
+             aisle seats on flights"</span></pre></div>
+          <div><h3>What a screen reader says</h3>
+            <audio controls data-autoplay src="audio/patterns.wav"></audio>
+            <ul class="said"><li>“Prefers aisle seats on flights, Trip Planner, active.”</li><li>“Select memory: Prefers aisle seats on flights, checkbox.”</li><li>“More actions for: Prefers aisle seats on flights, button.”</li></ul>
+            <p class="verdict-line good">Each control carries the row it acts on. Nothing to infer from layout.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="kicker">684 graded agent runs · 4 apps · Opus, Sonnet, Haiku 4.5, Haiku 5.5</p>
+        <h2>What the agent does with it</h2>
+        <table class="results">
+          <tr><th></th><th>Div soup</th><th>WCAG</th><th>Patterns</th></tr>
+          <tr><td>Task completion</td><td>95.2%</td><td>96.5%</td><td>98.7%</td></tr>
+          <tr><td>False “done”</td><td>4</td><td>4</td><td>0</td></tr>
+          <tr><td>Extra tokens on div soup vs WCAG, Haiku 4.5</td><td>+114%</td><td>baseline</td><td></td></tr>
+        </table>
+        <p class="note">Graded from app state (API, kubectl, CouchDB), not from the agent's own claim. github.com/unlikelyzero/agent-experience-mcpcon26</p>
+      </section>
+
+      <section class="section-divider" data-state="is-section-divider">
+        <h1>If a screen reader can't<br>tell what it does,<br>neither can your agent.</h1>
+        <p class="text-xl text-muted">Accessibility is your agent's interface.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({ hash: true, width: 1280, height: 720, margin: 0.04, transition: 'fade', autoPlayMedia: true });
+  </script>
+</body>
+</html>
