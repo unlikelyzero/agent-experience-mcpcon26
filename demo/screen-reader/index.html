@@ -65,6 +65,9 @@
     .app img { width: 100%; margin: 0; }
     .app i { position: absolute; border: 2px solid var(--primary-color); border-radius: 4px; background: rgba(0,172,214,.18); opacity: 0; transition: opacity .15s; }
     .app i.live { opacity: 1; }
+    .wcag-app { margin-top: 10px; }
+    .reveal section:has(.wcag-app) ul.said { font-size: 14pt; margin-top: 8px; } .reveal section:has(.wcag-app) ul.said li { margin: 2px 0; }
+    .reveal section:has(.wcag-app) .verdict-line { font-size: 13pt; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -135,6 +138,7 @@
 <pre class="tree"><span class="ln" data-cue="h1">- heading [level=1]: Memory Manager</span><span class="ln" data-cue="tabs">- tablist "Memory manager sections":</span><span class="ln" data-cue="tab1">  - tab "Memories" <span class="good">[selected]</span></span><span class="ln" data-cue="list">- list "Memories":</span><span class="ln">  - listitem:</span><span class="ln" data-cue="cb1">    - checkbox <span class="ok">"Select memory"</span></span><span class="ln" data-cue="btn1">    - button <span class="ok">"More actions"</span></span><span class="ln">    - paragraph: Reads mostly science fiction</span><span class="ln">  - listitem:</span><span class="ln" data-cue="cb2">    - checkbox <span class="ok">"Select memory"</span></span><span class="ln" data-cue="btn2">    - button <span class="ok">"More actions"</span></span><span class="ln">    - paragraph: Coffee order is a flat white</span><span class="ln">  - listitem:</span><span class="ln" data-cue="cb3">    - checkbox <span class="ok">"Select memory"</span></span><span class="ln" data-cue="btn3">    - button <span class="ok">"More actions"</span></span><span class="ln">    - paragraph: Allergic to cats</span></pre></div>
           <div><h3>What a screen reader says</h3>
             <audio controls data-autoplay data-tier="wcag" src="audio/wcag.wav"></audio>
+            <div class="app wcag-app"><img src="wcag-app-top.png" alt="The WCAG Memory Manager: heading and section tabs"><img src="wcag-app-cards.png" alt="The first three memory cards, each with a checkbox and a More actions button"><i data-cue="h1" style="left:2.0%;top:4.0%;width:20.8%;height:7.3%"></i><i data-cue="tabs" style="left:2.0%;top:17.7%;width:95.9%;height:11.1%"></i><i data-cue="tab1" style="left:2.0%;top:17.7%;width:7.6%;height:11.1%"></i><i data-cue="list" style="left:2.0%;top:30.7%;width:95.9%;height:69.7%"></i><i data-cue="cb1" style="left:3.6%;top:34.3%;width:2.4%;height:4.8%"></i><i data-cue="btn1" style="left:93.1%;top:33.7%;width:3.3%;height:6.5%"></i><i data-cue="cb2" style="left:3.6%;top:57.5%;width:2.4%;height:4.8%"></i><i data-cue="btn2" style="left:93.1%;top:56.8%;width:3.3%;height:6.5%"></i><i data-cue="cb3" style="left:3.6%;top:80.7%;width:2.4%;height:4.8%"></i><i data-cue="btn3" style="left:93.1%;top:80.0%;width:3.3%;height:6.5%"></i></div>
             <ul class="said"><li data-cue="tabs tab1">“Memories, selected, tab, 1 of 3.”</li><li data-cue="list">“Memories, list, 14 items.”</li><li data-cue="cb1 cb2 cb3">“Select memory, checkbox, unchecked.”</li><li data-cue="btn1 btn2 btn3">“More actions, button.” ×14</li></ul>
             <p class="verdict-line ok">Passes the audit. But “More actions” for which memory? The agent finds out by position, and position is where it slips.</p>
           </div>
